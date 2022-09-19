@@ -1,7 +1,7 @@
-import './style.css';
+//import './style.css';
 
-function hello() {
-    const hello = alert('test succesful')
-
+function sum(a, b) {
+    return a + b;
 }
-hello();
+
+module.exports = { sum, };
