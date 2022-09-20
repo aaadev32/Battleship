@@ -13,32 +13,43 @@ const factoryFunctionModule = (() => {
 
         carrier = {
             length: 5,
-            health: 5,
-            sunk: false
+            hits: [0, 0, 0, 0, 0],
+            sunk: false,
+        },
+            battleship = {
+                length: 4,
+                hits: [0, 0, 0, 0],
+                sunk: false,
+            },
+            destroyer = {
+                length: 3,
+                hits: [0, 0, 0],
+                sunk: false,
+            },
+            submarine = {
+                length: 3,
+                hits: [0, 0, 0],
+                sunk: false,
+            },
+            patrolBoat = {
+                length: 2,
+                hits: [0, 0],
+                sunk: false,
+            }
+
+
+        function hit(ship, index) {
+            for (i = 0; i < ship.hits.length; i++) {
+                if (i == index) {
+                    hits[i] = 1;
+                }
+            }
+            return ship.hits;
         }
-        battleship = {
-            length: 4,
-            health: 4,
-            sunk: false
-        }
-        destroyer = {
-            length: 3,
-            health: 3,
-            sunk: false
-        }
-        submarine = {
-            length: 3,
-            health: 3,
-            sunk: false
-        }
-        patrolBoat = {
-            length: 2,
-            health: 2,
-            sunk: false
-        }
+        return { carrier, battleship, destroyer, submarine, patrolBoat, hit };
+
     }
     return { ship };
 })();
 
-
-module.exports = { sum, };
+module.exports = { arraysObjectsModule, domManipulationModule, factoryFunctionModule };
