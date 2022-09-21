@@ -1,4 +1,4 @@
-import './style.css';
+//import './style.css';
 //create a ship factory function, be sure to set up a test
 const arraysObjectsModule = (() => {
 
@@ -9,9 +9,16 @@ const domManipulationModule = (() => {
 })();
 
 const factoryFunctionModule = (() => {
-    function ship() {
 
-        carrier = {
+    //these absolute object paths may be more useful in later code, keeping this block here for now
+    /*  const carrier = factoryFunctionModule.ship().carrier;
+     const battleship = factoryFunctionModule.ship().battleship;
+     const destroyer = factoryFunctionModule.ship().destroyer;
+     const submarine = factoryFunctionModule.ship().submarine;
+     const patrolBoat = factoryFunctionModule.ship().patrolBoat; */
+    const ship = function () {
+
+        let carrier = {
             length: 5,
             hits: [0, 0, 0, 0, 0],
             sunk: false,
@@ -38,18 +45,25 @@ const factoryFunctionModule = (() => {
             }
 
 
-        function hit(ship, index) {
-            for (i = 0; i < ship.hits.length; i++) {
-                if (i == index) {
-                    hits[i] = 1;
-                }
-            }
-            return ship.hits;
-        }
+
         return { carrier, battleship, destroyer, submarine, patrolBoat, hit };
 
     }
-    return { ship };
+
+    const hit = function (shipHealthArr, index) {
+        for (let i = 0; i < shipHealthArr.length; i++) {
+            if (i == index) {
+                shipHealthArr[i] = 1;
+            }
+        }
+        return shipHealthArr;
+    }
+    return { ship, hit };
 })();
 
-module.exports = { arraysObjectsModule, domManipulationModule, factoryFunctionModule };
+console.log(factoryFunctionModule.hit(factoryFunctionModule.ship().carrier.hits, 4));
+//change the hit function so that it only takes an index and changes the hit.arr on the correct ship object
+
+
+
+module.export = { arraysObjectsModule, domManipulationModule, factoryFunctionModule };
