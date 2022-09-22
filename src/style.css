@@ -3,3 +3,7 @@
     width: 600px;
     background-color: blanchedalmond;
 }
+
+#gameboard {
+    display: grid;
+}

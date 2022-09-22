@@ -1,21 +1,41 @@
 //import './style.css';
 //create a ship factory function, be sure to set up a test
-const arraysObjectsModule = (() => {
 
+//this module contains functions that make it easier to build DOM Elements
+const domModule = (() => {
+    const createElementIdClass = function (element, id, classN) {
+        let newELement = document.createElement(element);
+        newELement.id = id
+        newELement.className = classN;
+        return newELement;
+    }
+
+    return { createElementIdClass };
 })();
 
-const domManipulationModule = (() => {
+const gameboardModule = (() => {
 
+    //create a function that generates an 11x11 board (battelship standard) 
+    const generateBoard = function () {
+        let gridArea = 121;
+        for (i = 0; i < gridArea; i++) {
+            //print 65-74 (A-J) ascii codes to chars with String.fromCharCode() on grid squares 2-11
+
+            //every iteration that is a 0 modulus of 12 should print 1 and + 1 per the amount of children divided by 12 except on the first iteration;
+            let newDiv = createElementIdClass('div', `grid-id-${i}`, 'gameboard');
+            document.getElementById('content').appendChild(newDiv);
+        }
+    }
 })();
 
-const factoryFunctionModule = (() => {
+const shipModule = (() => {
 
     //these absolute object paths may be more useful in later code, keeping this block here for now
-    /*  const carrier = factoryFunctionModule.ship().carrier;
-     const battleship = factoryFunctionModule.ship().battleship;
-     const destroyer = factoryFunctionModule.ship().destroyer;
-     const submarine = factoryFunctionModule.ship().submarine;
-     const patrolBoat = factoryFunctionModule.ship().patrolBoat; */
+    /*  const carrier = shipModule.ship().carrier;
+     const battleship = shipModule.ship().battleship;
+     const destroyer = shipModule.ship().destroyer;
+     const submarine = shipModule.ship().submarine;
+     const patrolBoat = shipModule.ship().patrolBoat; */
     const ship = function () {
 
         let carrier = {
@@ -56,14 +76,35 @@ const factoryFunctionModule = (() => {
                 shipHealthArr[i] = 1;
             }
         }
-        return shipHealthArr;
+        return shipHealthArr
     }
-    return { ship, hit };
+
+    const isSunk = function (ship) {
+        let damage = 0;
+        for (let i = 0; i < ship.hits; i++) {
+            if (ship.hits[i] == 1) {
+                damage++;
+
+            }
+        }
+        if (damage == ship.length) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return { ship, hit, isSunk };
 })();
+console.log(shipModule.hit(shipModule.ship().carrier.hits, 4));
+console.log(shipModule.isSunk(shipModule.ship().carrier))
 
-console.log(factoryFunctionModule.hit(factoryFunctionModule.ship().carrier.hits, 4));
-//change the hit function so that it only takes an index and changes the hit.arr on the correct ship object
+let test = domModule.createElementIdClass('div', 'test', 'test')
+test.backgroundColor = 'black';
+document.getElementById('content').appendChild(test);
 
 
 
-module.export = { arraysObjectsModule, domManipulationModule, factoryFunctionModule };
+
+module.export = { domModule, gameboardModule, shipModule };
+
+//fix document not defined line 7
