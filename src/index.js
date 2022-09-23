@@ -1,18 +1,19 @@
 //import './style.css';
-//create a ship factory function, be sure to set up a test
+
 
 //this module contains functions that make it easier to build DOM Elements
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
-        let newELement = document.createElement(element);
-        newELement.id = id
-        newELement.className = classN;
-        return newELement;
+        let newElement = document.createElement(element);
+        newElement.id = id
+        newElement.className = classN;
+        return newElement;
     }
 
     return { createElementIdClass };
 })();
 
+//DOM creation for the initial gameboard
 const gameboardModule = (() => {
 
     //create a function that generates an 11x11 board (battelship standard) 
@@ -97,14 +98,10 @@ const shipModule = (() => {
 })();
 console.log(shipModule.hit(shipModule.ship().carrier.hits, 4));
 console.log(shipModule.isSunk(shipModule.ship().carrier))
+const testShip = shipModule.ship().carrier;
+const sunkTestShip = testShip.sunk = true;
 
-let test = domModule.createElementIdClass('div', 'test', 'test')
-test.backgroundColor = 'black';
-document.getElementById('content').appendChild(test);
-
-
-
-
-module.export = { domModule, gameboardModule, shipModule };
-
-//fix document not defined line 7
+module.exports = { domModule, gameboardModule, shipModule };
+/*module.exports = (function () {
+    shipModule.ship(), shipModule.hit(), shipModule.isSunk(), domModule.createElementIdClass()
+})();  */
