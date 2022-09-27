@@ -1,6 +1,6 @@
 //import './style.css';
 
-
+const add = (a, b) => a + b;
 //this module contains functions that make it easier to build DOM Elements
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -31,12 +31,6 @@ const gameboardModule = (() => {
 
 const shipModule = (() => {
 
-    //these absolute object paths may be more useful in later code, keeping this block here for now
-    /*  const carrier = shipModule.ship().carrier;
-     const battleship = shipModule.ship().battleship;
-     const destroyer = shipModule.ship().destroyer;
-     const submarine = shipModule.ship().submarine;
-     const patrolBoat = shipModule.ship().patrolBoat; */
     const ship = function () {
 
         let carrier = {
@@ -67,41 +61,43 @@ const shipModule = (() => {
 
 
 
-        return { carrier, battleship, destroyer, submarine, patrolBoat, hit };
+        return { carrier, battleship, destroyer, submarine, patrolBoat };
 
     }
 
-    const hit = function (shipHealthArr, index) {
-        for (let i = 0; i < shipHealthArr.length; i++) {
+    function hit(shipHealthArr, index) {
+        for (let i = 0; i < shipHealthArr?.length; i++) {
             if (i == index) {
                 shipHealthArr[i] = 1;
             }
         }
-        return shipHealthArr
+        return shipHealthArr;
     }
 
-    const isSunk = function (ship) {
+    function isSunk(ship) {
+
         let damage = 0;
-        for (let i = 0; i < ship.hits; i++) {
+        for (let i = 0; i < ship?.hits; i++) {
             if (ship.hits[i] == 1) {
                 damage++;
 
             }
         }
-        if (damage == ship.length) {
+        if (damage == ship?.length) {
             return true;
         } else {
             return false;
         }
     }
+
     return { ship, hit, isSunk };
 })();
-console.log(shipModule.hit(shipModule.ship().carrier.hits, 4));
-console.log(shipModule.isSunk(shipModule.ship().carrier))
-const testShip = shipModule.ship().carrier;
-const sunkTestShip = testShip.sunk = true;
 
-module.exports = { domModule, gameboardModule, shipModule };
-/*module.exports = (function () {
-    shipModule.ship(), shipModule.hit(), shipModule.isSunk(), domModule.createElementIdClass()
-})();  */
+
+//let testDiv = domModule.createElementIdClass('div','test', 'test');
+//document.getElementById('content').appendChild(testDiv);
+let sunkShip = shipModule.ship().battleship.hits;
+sunkShip.hits = [1, 1, 1, 1]
+
+
+module.exports = { domModule, gameboardModule, shipModule, add, sunkShip };
