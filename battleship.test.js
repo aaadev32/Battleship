@@ -12,14 +12,16 @@ test('is this thing on?,', () => {
 });
 
 test('isSunk function returns false on unsunk ships', () => {
-    expect(main.shipModule.isSunk(main.shipModule.ship().carrier)).toBe(false)
+    expect(main.shipModule.isSunk(main.shipModule.ship().carrier)).toBeFalsy()
 });
 
 test('isSunk function returns true on sunk ships', () => {
-    expect(main.shipModule.isSunk(main.sunkShip)).toBe(true)
+    expect(main.shipModule.isSunk(main.sunkShip)).toBeTruthy()
 });
 
 test('ship loses hp and correct array index is marked', () => {
     expect(main.shipModule.hit(main.shipModule.ship().carrier.hits, 4)).toEqual([0, 0, 0, 0, 1])
+    expect(main.shipModule.hit(main.shipModule.ship().carrier.hits, 0)).toEqual([1, 0, 0, 0, 0])
+
 });
 

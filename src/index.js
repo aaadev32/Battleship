@@ -15,18 +15,28 @@ const domModule = (() => {
 
 //DOM creation for the initial gameboard
 const gameboardModule = (() => {
+    const gameboard = function (ship, xCoordinate, yCoordinate) {
 
-    //create a function that generates an 11x11 board (battelship standard) 
+        placedShip = {
+            shipType: ship,
+            xAxis: xCoordinate,
+            yAxis: yCoordinate
+        }
+        function receiveAttack(xCoordinate, yCoordinate) {
+            //find if x and y coords resulted in a hit or miss, if its a hit call the hit() function on the appropriate ship object, if miss record it in the DOM
+        }
+        return placedShip
+    }
+    //WiP
     const generateBoard = function () {
-        let gridArea = 121;
+        let gridArea = 100;
         for (i = 0; i < gridArea; i++) {
-            //print 65-74 (A-J) ascii codes to chars with String.fromCharCode() on grid squares 2-11
 
-            //every iteration that is a 0 modulus of 12 should print 1 and + 1 per the amount of children divided by 12 except on the first iteration;
             let newDiv = createElementIdClass('div', `grid-id-${i}`, 'gameboard');
             document.getElementById('content').appendChild(newDiv);
         }
     }
+    return { generateBoard }
 })();
 
 const shipModule = (() => {
@@ -59,14 +69,12 @@ const shipModule = (() => {
                 sunk: false,
             }
 
-
-
         return { carrier, battleship, destroyer, submarine, patrolBoat };
 
     }
 
     function hit(shipHealthArr, index) {
-        for (let i = 0; i < shipHealthArr?.length; i++) {
+        for (let i = 0; i < shipHealthArr.length; i++) {
             if (i == index) {
                 shipHealthArr[i] = 1;
             }
@@ -77,15 +85,17 @@ const shipModule = (() => {
     function isSunk(ship) {
 
         let damage = 0;
-        for (let i = 0; i < ship?.hits; i++) {
+        for (let i = 0; i < ship.hits.length; i++) {
             if (ship.hits[i] == 1) {
                 damage++;
 
             }
         }
-        if (damage == ship?.length) {
+        if (damage == ship.length) {
+            ship.sunk = true;
             return true;
         } else {
+            ship.sunk = false;
             return false;
         }
     }
@@ -93,11 +103,9 @@ const shipModule = (() => {
     return { ship, hit, isSunk };
 })();
 
-
 //let testDiv = domModule.createElementIdClass('div','test', 'test');
 //document.getElementById('content').appendChild(testDiv);
 let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1]
-
 
 module.exports = { domModule, gameboardModule, shipModule, add, sunkShip };
