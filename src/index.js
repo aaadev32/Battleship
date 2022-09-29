@@ -2,6 +2,12 @@
 
 const add = (a, b) => a + b;
 //this module contains functions that make it easier to build DOM Elements
+const dataModule = (() => {
+    //add each ship into this array after placement, this is crucial to determining hits and misses with receiveAttack function
+    let shipStatus = [];
+
+    return { shipStatus };
+})();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
         let newElement = document.createElement(element);
@@ -15,17 +21,20 @@ const domModule = (() => {
 
 //DOM creation for the initial gameboard
 const gameboardModule = (() => {
-    const gameboard = function (ship, xCoordinate, yCoordinate) {
 
-        placedShip = {
-            shipType: ship,
-            xAxis: xCoordinate,
-            yAxis: yCoordinate
+
+    const gameboard = function (ship, xCoordinates, yCoordinates) {
+
+        let placeShip = {
+            shipObj: ship,
+            xAxis: xCoordinates,
+            yAxis: yCoordinates
         }
-        function receiveAttack(xCoordinate, yCoordinate) {
-            //find if x and y coords resulted in a hit or miss, if its a hit call the hit() function on the appropriate ship object, if miss record it in the DOM
+
+        function receiveAttack(ship, xCoordinates, yCoordinates) {
+            for(const property in ship)
         }
-        return placedShip
+        return placeShip
     }
     //WiP
     const generateBoard = function () {
@@ -36,7 +45,7 @@ const gameboardModule = (() => {
             document.getElementById('content').appendChild(newDiv);
         }
     }
-    return { generateBoard }
+    return { generateBoard, gameboard }
 })();
 
 const shipModule = (() => {
@@ -108,4 +117,7 @@ const shipModule = (() => {
 let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1]
 
-module.exports = { domModule, gameboardModule, shipModule, add, sunkShip };
+let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], 0)
+dataModule.shipStatus.push(gameBoardTestShip);
+console.log(dataModule.shipStatus)
+module.exports = { dataModule, domModule, gameboardModule, shipModule, add, sunkShip };
