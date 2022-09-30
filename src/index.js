@@ -3,10 +3,10 @@
 const add = (a, b) => a + b;
 //this module contains functions that make it easier to build DOM Elements
 const dataModule = (() => {
-    //add each ship into this array after placement, this is crucial to determining hits and misses with receiveAttack function
-    let shipStatus = [];
+    //add each ship into this object after placement, this is crucial to determining hits and misses with receiveAttack function
+    let fleetStatus = {};
 
-    return { shipStatus };
+    return { fleetStatus };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -25,16 +25,45 @@ const gameboardModule = (() => {
 
     const gameboard = function (ship, xCoordinates, yCoordinates) {
 
-        let placeShip = {
+        let shipPlacement = {
             shipObj: ship,
             xAxis: xCoordinates,
             yAxis: yCoordinates
         }
+        return shipPlacement;
+    }
 
-        function receiveAttack(ship, xCoordinates, yCoordinates) {
-            for(const property in ship)
+    function receiveAttack(shipName, xCoordinates, yCoordinates) {
+
+
+        //the first for loop iterates through the ship storage array, the nested for in loop compares the properties
+        for (let i = 0; i < dataModule.fleetStatus.length; i++) {
+            //when the correct ship object has been selected the xAxis and yAxis positions for below loops are checking against the x/yCoordinate attack parameters of this function
+            for (const property in dataModule.fleetStatus[i]) {
+                if (property == shipName) {
+                    for (i = 0; i < dataModule.fleetStatus.xAxis.length; i++) {
+                        if (dataModule.fleetStatus.xAxis[i] == xCoordinates) {
+                            shipModule.hit(dataModule.fleetStatus[i].hits)
+                            let hit = true;
+                        }
+                    }
+
+                    for (i = 0; i < dataModule.fleetStatus.yAxis.length; i++) {
+                        if (dataModule.fleetStatus.yAxis[i] == yCoordinates) {
+                            shipModule.hit(dataModule.fleetStatus[i].hits)
+                            let hit = true;
+                        }
+                    }
+                }
+            }
         }
-        return placeShip
+
+        if (hit == true) {
+            //implement code to mark the DOM element where the attack missed when done with jest testing
+            return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
+        } else {
+            return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
+        }
     }
     //WiP
     const generateBoard = function () {
@@ -45,7 +74,7 @@ const gameboardModule = (() => {
             document.getElementById('content').appendChild(newDiv);
         }
     }
-    return { generateBoard, gameboard }
+    return { generateBoard, gameboard, receiveAttack }
 })();
 
 const shipModule = (() => {
@@ -118,6 +147,6 @@ let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1]
 
 let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], 0)
-dataModule.shipStatus.push(gameBoardTestShip);
-console.log(dataModule.shipStatus)
+dataModule.fleetStatus = { gameBoardTestShip };
+
 module.exports = { dataModule, domModule, gameboardModule, shipModule, add, sunkShip };
