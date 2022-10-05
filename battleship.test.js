@@ -26,9 +26,9 @@ test('ship loses hp and correct array index is marked', () => {
 });
 
 test('receiveAttack function returns true when a ship has been hit', () => {
-    expect(main.gameboardModule.receiveAttack('battleship', 0, 0)).toBeTruthy()
+    expect(main.gameboardModule.receiveAttack(0, 0)).toBeTruthy()
 });
 
 test('receiveAttack function returns false when a ship has been missed', () => {
-    expect(main.gameboardModule.receiveAttack('battleship', 1, 1)).toBeFalsy()
+    expect(main.gameboardModule.receiveAttack(1, 1)).toBeFalsy()
 });

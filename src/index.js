@@ -1,7 +1,7 @@
 //import './style.css';
 
 const add = (a, b) => a + b;
-//this module contains functions that make it easier to build DOM Elements
+//this module contains functions that maje it easier to build DOM Elements
 const dataModule = (() => {
     //add each ship into this object after placement, this is crucial to determining hits and misses with receiveAttack function
     let fleetStatus = [];
@@ -34,42 +34,47 @@ const gameboardModule = (() => {
     }
 
     function receiveAttack(xCoordinates, yCoordinates) {
-        let hit = undefined
+        let xCoordinatesTrue = false;
+        let yCoordinatesTrue = false;
+        let xHitIndex = null;
+        let yHitIndex = null;
 
         for (let i = 0; i < dataModule.fleetStatus.length; i++) {
-
+            console.log(dataModule.fleetStatus[i].shipObj.hits);
             for (let j = 0; j < dataModule.fleetStatus[i].xAxis.length; j++) {
 
 
                 if (dataModule.fleetStatus[i].xAxis[j] == xCoordinates) {
-                    console.log(dataModule.fleetStatus[i].shipObj.hits);
-                    //left off here 10-3
-                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, j);
-                    hit = true;
-                    console.log(`hit is true`)
+                    xHitIndex = j;
+                    xCoordinatesTrue = true
                 }
             }
 
             for (let j = 0; j < dataModule.fleetStatus[i].yAxis.length; j++) {
 
                 if (dataModule.fleetStatus[i].yAxis[j] == yCoordinates) {
-                    console.log(dataModule.fleetStatus[i].shipObj.hits);
-                    //left off here 10-3
-                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, j);
-                    hit = true;
-                    console.log(`hit is false`)
+                    yHitIndex = j;
+                    yCoordinatesTrue = true;
                 }
             }
-
-
+            if (xCoordinatesTrue && yCoordinatesTrue == true) {
+                //when scanning the nAxis arrays for truthyness for x/yCoordinates use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
+                if (dataModule.fleetStatus[i].xAxis.length > dataModule.fleetStatus[i].yAxis.length) {
+                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, xHitIndex)
+                    console.log(dataModule.fleetStatus[i].shipObj.hits);
+                } else {
+                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, yHitIndex)
+                    console.log(dataModule.fleetStatus[i].shipObj.hits);
+                }
+                return true;//alert(`attacj ${xCoordinates}, ${yCoordinates} hits!`)
+            } else {
+                return false;//alert(`attacj ${xCoordinates}, ${yCoordinates} misses!`)
+            }
         }
 
-        if (hit != undefined && hit == true) {
-            //implement code to mark the DOM element where the attack missed when done with jest testing
-            return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
-        } else {
-            return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
-        }
+        //properly implement hit function when i figure out how to link ship object hit array to the DOM 
+
+
     }
     //WiP
     const generateBoard = function () {
@@ -155,7 +160,7 @@ let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1];
 let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], [0])
 dataModule.fleetStatus = [gameBoardTestShip];
-console.log(gameboardModule.receiveAttack(0, 0));
+console.log(gameboardModule.receiveAttack(1, 0));
 console.log(gameboardModule.receiveAttack(3, 4));
 
 
