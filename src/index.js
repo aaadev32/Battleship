@@ -23,7 +23,7 @@ const domModule = (() => {
 const gameboardModule = (() => {
 
 
-    const gameboard = function (ship, xCoordinates, yCoordinates) {
+    let gameboard = function (ship, xCoordinates, yCoordinates) {
 
         let shipPlacement = {
             shipObj: ship,
@@ -66,15 +66,27 @@ const gameboardModule = (() => {
                     shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, yHitIndex)
                     console.log(dataModule.fleetStatus[i].shipObj.hits);
                 }
-                return true;//alert(`attacj ${xCoordinates}, ${yCoordinates} hits!`)
+                return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
             } else {
-                return false;//alert(`attacj ${xCoordinates}, ${yCoordinates} misses!`)
+                //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
+                return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
+            }
+        }
+    }
+
+    function winCheck() {
+        let sunk = 0;
+        for (let i = 0; i < dataModule.fleetStatus.length; i++) {
+            if (dataModule.fleetStatus[i].shipObj.sunk == true) {
+                sunk++;
             }
         }
 
-        //properly implement hit function when i figure out how to link ship object hit array to the DOM 
-
-
+        if (sunk == dataModule.fleetStatus.length) {
+            return true; //alert('fleet sunk!')
+        } else if (sunk != dataModule.fleetStatus.length) {
+            return false //alert('get me my brown pants')
+        }
     }
     //WiP
     const generateBoard = function () {
@@ -85,7 +97,7 @@ const gameboardModule = (() => {
             document.getElementById('content').appendChild(newDiv);
         }
     }
-    return { generateBoard, gameboard, receiveAttack }
+    return { generateBoard, gameboard, receiveAttack, winCheck }
 })();
 
 const shipModule = (() => {
@@ -162,6 +174,7 @@ let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, 
 dataModule.fleetStatus = [gameBoardTestShip];
 console.log(gameboardModule.receiveAttack(1, 0));
 console.log(gameboardModule.receiveAttack(3, 4));
+console.log(gameboardModule.winCheck());
 
 
 module.exports = { dataModule, domModule, gameboardModule, shipModule, add, sunkShip };

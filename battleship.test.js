@@ -32,3 +32,8 @@ test('receiveAttack function returns true when a ship has been hit', () => {
 test('receiveAttack function returns false when a ship has been missed', () => {
     expect(main.gameboardModule.receiveAttack(1, 1)).toBeFalsy()
 });
+
+test('winCheck returns false when there are unsunken ships', () => {
+    expect(main.gameboardModule.winCheck()).toBeFalsy()
+});
+
