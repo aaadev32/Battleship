@@ -37,3 +37,9 @@ test('winCheck returns false when there are unsunken ships', () => {
     expect(main.gameboardModule.winCheck()).toBeFalsy()
 });
 
+test('the correct coordinates are recorded to the missedCoordinates array', () => {
+    expect(main.dataModule.missedCoordinates[0].x).toBe(3)
+    expect(main.dataModule.missedCoordinates[0].y).toBe(4)
+});
+
+

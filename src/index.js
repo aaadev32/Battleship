@@ -5,8 +5,9 @@ const add = (a, b) => a + b;
 const dataModule = (() => {
     //add each ship into this object after placement, this is crucial to determining hits and misses with receiveAttack function
     let fleetStatus = [];
+    let missedCoordinates = [];
 
-    return { fleetStatus };
+    return { fleetStatus, missedCoordinates };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -58,7 +59,7 @@ const gameboardModule = (() => {
                 }
             }
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
-                //when scanning the nAxis arrays for truthyness for x/yCoordinates use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
+                //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
                 if (dataModule.fleetStatus[i].xAxis.length > dataModule.fleetStatus[i].yAxis.length) {
                     shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, xHitIndex)
                     console.log(dataModule.fleetStatus[i].shipObj.hits);
@@ -68,6 +69,9 @@ const gameboardModule = (() => {
                 }
                 return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
             } else {
+                //keep track of missed coordinates for DOM display
+                let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
+                dataModule.missedCoordinates.push(missedXYCoordinates);
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
                 return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
             }
@@ -88,6 +92,9 @@ const gameboardModule = (() => {
             return false //alert('get me my brown pants')
         }
     }
+
+    //write a function to keep track of missed attacks
+
     //WiP
     const generateBoard = function () {
         let gridArea = 100;
@@ -172,9 +179,5 @@ let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1];
 let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], [0])
 dataModule.fleetStatus = [gameBoardTestShip];
-console.log(gameboardModule.receiveAttack(1, 0));
-console.log(gameboardModule.receiveAttack(3, 4));
-console.log(gameboardModule.winCheck());
-
 
 module.exports = { dataModule, domModule, gameboardModule, shipModule, add, sunkShip };
