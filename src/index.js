@@ -1,18 +1,19 @@
 //import './style.css';
 
 const add = (a, b) => a + b;
-//this module contains functions that maje it easier to build DOM Elements
 const dataModule = (() => {
     //add each ship into this object after placement, this is crucial to determining hits and misses with receiveAttack function
     let fleetStatus = [];
-    let missedCoordinates = [];
+    let usedCoordinates = [];
+    let pvp = false;
+    let player1Turn = true;
 
-    return { fleetStatus, missedCoordinates };
+    return { fleetStatus, usedCoordinates, player1Turn, pvp };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
         let newElement = document.createElement(element);
-        newElement.id = id
+        newElement.id = id;
         newElement.className = classN;
         return newElement;
     }
@@ -20,10 +21,63 @@ const domModule = (() => {
     return { createElementIdClass };
 })();
 
-//DOM creation for the initial gameboard
+const playerAndPCModule = (() => {
+    //this function deals hiding player screens between device handoffs and 
+    function player() {
+        //if its a pvp game this statement block should insure the screen is hidden when passing the device
+        if (dataModule.player1Turn == true && dataModule.pvp == true) {
+            if (dataModule.player1Turn == true) {
+                //implement a DOM handler to cover the game board when the DOM actually gets implemented
+                alert('player 1\'s turn! no peeking.')
+                dataModule.player1Turn = false;
+            } else {
+                //implement a DOM handler to cover the game board when the DOM actually gets implemented
+                alert('player 2\'s turn! no peeking.')
+                dataModule.player1Turn = true;
+            }
+        } else {
+            if (dataModule.player1Turn == true) {
+                alert('player 1 take a shot');
+                dataModule.player1Turn = false;
+            } else {
+                alert('pc\'s turn');
+                dataModule.player1Turn = true;
+            }
+        }
+    }
+
+    function getRandomChar() {
+        let result = '';
+        let characters = 'abcdefghij';
+        for (let i = 0; i < 1; i++) {
+            result += characters.charAt(Math.floor(Math.random() *
+                characters.length));
+        }
+        return result;
+    }
+    //create an ai function that will determine the computer players attacks
+    function pcPlay() {
+        //get a random integer between 0 and 11 (y axis)
+        let randomXCoordinate = Math.floor(Math.random() * 12);
+        //get a random char between a and j (x axis)
+        let randomYCoordinate = getRandomChar();
+        //plug the random x and y coordinates IF they do not match a pair of coordinates in the dataModule usedCoordinates array
+        for (i = 0; i < dataModule.usedCoordinates.length; i++) {
+            for (const property in dataModule.usedCoordinates[i]) {
+                //this block will recursively call the pcPlay function until the randomCoordinates consist of a pair that have not already been played
+                if (dataModule.usedCoordinates.x == randomXCoordinate && dataModule.usedCoordinates.y == randomYCoordinate) {
+                    pcPlay()
+                }
+            }
+        }
+    }
+    return { player, getRandomChar, pcPlay }
+})();
+//create the main game loop and a module for DOM interaction. 
+const gameLoopModule = (() => {
+
+})();
 const gameboardModule = (() => {
-
-
     let gameboard = function (ship, xCoordinates, yCoordinates) {
 
         let shipPlacement = {
@@ -39,6 +93,8 @@ const gameboardModule = (() => {
         let yCoordinatesTrue = false;
         let xHitIndex = null;
         let yHitIndex = null;
+
+
 
         for (let i = 0; i < dataModule.fleetStatus.length; i++) {
             console.log(dataModule.fleetStatus[i].shipObj.hits);
@@ -62,16 +118,16 @@ const gameboardModule = (() => {
                 //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
                 if (dataModule.fleetStatus[i].xAxis.length > dataModule.fleetStatus[i].yAxis.length) {
                     shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, xHitIndex)
-                    console.log(dataModule.fleetStatus[i].shipObj.hits);
+                    let hitCoordinates = { x: xCoordinates, y: yCoordinates };
+                    dataModule.usedCoordinates.push(hitCoordinates)
                 } else {
                     shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, yHitIndex)
-                    console.log(dataModule.fleetStatus[i].shipObj.hits);
                 }
                 return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
             } else {
                 //keep track of missed coordinates for DOM display
                 let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.missedCoordinates.push(missedXYCoordinates);
+                dataModule.usedCoordinates.push(missedXYCoordinates);
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
                 return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
             }
@@ -79,21 +135,19 @@ const gameboardModule = (() => {
     }
 
     function winCheck() {
-        let sunk = 0;
+        let sunkShips = 0;
         for (let i = 0; i < dataModule.fleetStatus.length; i++) {
             if (dataModule.fleetStatus[i].shipObj.sunk == true) {
-                sunk++;
+                sunkShips++;
             }
         }
 
-        if (sunk == dataModule.fleetStatus.length) {
+        if (sunkShips == dataModule.fleetStatus.length) {
             return true; //alert('fleet sunk!')
-        } else if (sunk != dataModule.fleetStatus.length) {
+        } else if (sunkShips != dataModule.fleetStatus.length) {
             return false //alert('get me my brown pants')
         }
     }
-
-    //write a function to keep track of missed attacks
 
     //WiP
     const generateBoard = function () {
@@ -179,5 +233,8 @@ let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1];
 let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], [0])
 dataModule.fleetStatus = [gameBoardTestShip];
-
-module.exports = { dataModule, domModule, gameboardModule, shipModule, add, sunkShip };
+gameboardModule.receiveAttack(1, 0);
+gameboardModule.receiveAttack(3, 4);
+console.log(playerAndPCModule.getRandomChar())
+console.log(dataModule.usedCoordinates[0], dataModule.usedCoordinates[1])
+module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, add, sunkShip };
