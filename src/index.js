@@ -1,4 +1,4 @@
-//import './style.css';
+import './style.css';
 
 const add = (a, b) => a + b;
 const dataModule = (() => {
@@ -28,20 +28,24 @@ const playerAndPCModule = (() => {
         if (dataModule.player1Turn == true && dataModule.pvp == true) {
             if (dataModule.player1Turn == true) {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                alert('player 1\'s turn! no peeking.')
+                //alert('player 1\'s turn! no peeking.')
                 dataModule.player1Turn = false;
+                return false;
             } else {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                alert('player 2\'s turn! no peeking.')
+                //alert('player 2\'s turn! no peeking.')
                 dataModule.player1Turn = true;
+                return true;
             }
         } else {
             if (dataModule.player1Turn == true) {
-                alert('player 1 take a shot');
+                //alert('player 1 take a shot');
                 dataModule.player1Turn = false;
+                return false;
             } else {
-                alert('pc\'s turn');
+                //alert('pc\'s turn');
                 dataModule.player1Turn = true;
+                return true;
             }
         }
     }
@@ -50,7 +54,7 @@ const playerAndPCModule = (() => {
         let result = '';
         let characters = 'abcdefghij';
         for (let i = 0; i < 1; i++) {
-            result += characters.charAt(Math.floor(Math.random() *
+            result = characters.charAt(Math.floor(Math.random() *
                 characters.length));
         }
         return result;
@@ -70,12 +74,18 @@ const playerAndPCModule = (() => {
                 }
             }
         }
+        //if the random coordinate pairs do not match any in the usedCoordinates array they should be passed through the receive attack function
+        gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
     }
     return { player, getRandomChar, pcPlay }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
+    function userInterface() {
+        //The game loop should set up a new game by creating Players and Gameboards
 
+
+    }
 })();
 const gameboardModule = (() => {
     let gameboard = function (ship, xCoordinates, yCoordinates) {
@@ -228,8 +238,8 @@ const shipModule = (() => {
 //let testDiv = domModule.createElementIdClass('div','test', 'test');
 //document.getElementById('content').appendChild(testDiv);
 
-// do NOT remove these until finished with testing!
-let sunkShip = shipModule.ship().battleship.hits;
+//the block below is for jest testing
+/*let sunkShip = shipModule.ship().battleship.hits;
 sunkShip.hits = [1, 1, 1, 1];
 let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, [0, 1, 2, 3], [0])
 dataModule.fleetStatus = [gameBoardTestShip];
@@ -237,4 +247,5 @@ gameboardModule.receiveAttack(1, 0);
 gameboardModule.receiveAttack(3, 4);
 console.log(playerAndPCModule.getRandomChar())
 console.log(dataModule.usedCoordinates[0], dataModule.usedCoordinates[1])
-module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, add, sunkShip };
+const newBool = playerAndPCModule.player()
+module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, add, sunkShip, newBool }; */

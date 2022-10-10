@@ -37,9 +37,17 @@ test('winCheck returns false when there are unsunken ships', () => {
     expect(main.gameboardModule.winCheck()).toBeFalsy()
 });
 
-test('the correct coordinates are recorded to the missedCoordinates array', () => {
-    expect(main.dataModule.missedCoordinates[0].x).toBe(3)
-    expect(main.dataModule.missedCoordinates[0].y).toBe(4)
+test('the correct coordinates are recorded to the usedCoordinates array', () => {
+    expect(main.dataModule.usedCoordinates[1].x).toBe(3)
+    expect(main.dataModule.usedCoordinates[1].y).toBe(4)
 });
 
+test('getRandomChar function should return random char between a-j', () => {
+    const xAxisCharRegEx = /[a-j]/;
+    expect(main.playerAndPCModule.getRandomChar()).toMatch(xAxisCharRegEx);
+});
 
+test('player() changes the player1Turn variable from truthy to falsy and vice versa', () => {
+    //when player() is called in newBool player1Turn bool value should flip
+    expect(main.newBool).toBeFalsy()
+});
