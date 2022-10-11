@@ -1,14 +1,14 @@
 import './style.css';
 
-const add = (a, b) => a + b;
 const dataModule = (() => {
-    //add each ship into this object after placement, this is crucial to determining hits and misses with receiveAttack function
-    let fleetStatus = [];
-    let usedCoordinates = [];
+    let player1fleetStatus = [];
+    let player2fleetStatus = []
+    let player1UsedCoordinates = [];
+    let player2UsedCoordinates = [];
     let pvp = false;
     let player1Turn = true;
 
-    return { fleetStatus, usedCoordinates, player1Turn, pvp };
+    return { player1fleetStatus, player2fleetStatus, player1UsedCoordinates, player2UsedCoordinates, player1Turn, pvp };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -61,10 +61,10 @@ const playerAndPCModule = (() => {
     }
     //create an ai function that will determine the computer players attacks
     function pcPlay() {
-        //get a random integer between 0 and 11 (y axis)
-        let randomXCoordinate = Math.floor(Math.random() * 12);
-        //get a random char between a and j (x axis)
-        let randomYCoordinate = getRandomChar();
+        //get a random integer between 0 and 10 (x axis)
+        let randomXCoordinate = Math.floor(Math.random() * 11);
+        //get a random integer between 0 and 10 (y axis)
+        let randomYCoordinate = Math.floor(Math.random() * 11);
         //plug the random x and y coordinates IF they do not match a pair of coordinates in the dataModule usedCoordinates array
         for (i = 0; i < dataModule.usedCoordinates.length; i++) {
             for (const property in dataModule.usedCoordinates[i]) {
@@ -83,9 +83,11 @@ const playerAndPCModule = (() => {
 const gameLoopModule = (() => {
     function userInterface() {
         //The game loop should set up a new game by creating Players and Gameboards
-
+        document.getElementById('user-interface').style.display = 'flex';
 
     }
+
+    return { userInterface };
 })();
 const gameboardModule = (() => {
     let gameboard = function (ship, xCoordinates, yCoordinates) {
@@ -108,6 +110,7 @@ const gameboardModule = (() => {
 
         for (let i = 0; i < dataModule.fleetStatus.length; i++) {
             console.log(dataModule.fleetStatus[i].shipObj.hits);
+            //checks if xCoordinate hits
             for (let j = 0; j < dataModule.fleetStatus[i].xAxis.length; j++) {
 
 
@@ -116,7 +119,7 @@ const gameboardModule = (() => {
                     xCoordinatesTrue = true
                 }
             }
-
+            //checks if yCoordinate hits
             for (let j = 0; j < dataModule.fleetStatus[i].yAxis.length; j++) {
 
                 if (dataModule.fleetStatus[i].yAxis[j] == yCoordinates) {
@@ -124,6 +127,7 @@ const gameboardModule = (() => {
                     yCoordinatesTrue = true;
                 }
             }
+            //if both coordinates hits are true, call hit function on correct ship and index of its hits array
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
                 //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
                 if (dataModule.fleetStatus[i].xAxis.length > dataModule.fleetStatus[i].yAxis.length) {
@@ -161,11 +165,33 @@ const gameboardModule = (() => {
 
     //WiP
     const generateBoard = function () {
-        let gridArea = 100;
-        for (i = 0; i < gridArea; i++) {
+        //create a gameboard generator that generates a div for each coordinate with a data-xaxis and
+        //a data-yaxis value for each div
 
-            let newDiv = createElementIdClass('div', `grid-id-${i}`, 'gameboard');
-            document.getElementById('content').appendChild(newDiv);
+        //the next 6 lines creates a gameboard-container and appends the 2 gameboards inside of it
+        let gameboardContainer = domModule.createElementIdClass('div', 'gameboard-container', '');
+        let player1GameBoard = domModule.createElementIdClass('div', 'player1-gameboard', '');
+        let player2GameBoard = domModule.createElementIdClass('div', 'player2-gameboard', '');
+        document.getElementById('content').appendChild(gameboardContainer);
+        document.getElementById('gameboard-container').appendChild(player1GameBoard);
+        document.getElementById('gameboard-container').appendChild(player2GameBoard);
+
+        //1 based indexing for more clarity when working with gameboard coordinates and data attributes
+        for (let i = 1; i < 11; i++) {
+            for (let j = 1; j < 11; j++) {
+
+                //this for loop block creates new divs with data-x/y-axis values and appends them to each player gameboard
+                let newDiv = document.createElement('div')
+                let newDiv2 = document.createElement('div')
+                newDiv.dataset.xaxis = `${i}`;
+                newDiv.dataset.yaxis = `${j}`;
+                newDiv.className = 'gameboard-cell';
+                newDiv2.className = 'gameboard-cell';
+                newDiv2.setAttribute('data-xaxis', i);
+                newDiv2.setAttribute('data-yaxis', j);
+                document.getElementById('player1-gameboard').appendChild(newDiv);
+                document.getElementById('player2-gameboard').appendChild(newDiv2);
+            }
         }
     }
     return { generateBoard, gameboard, receiveAttack, winCheck }
@@ -235,6 +261,24 @@ const shipModule = (() => {
     return { ship, hit, isSunk };
 })();
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//sets the user interface display to flex on page open
+gameLoopModule.userInterface();
+document.getElementById('pvp-selection').addEventListener('click', () => {
+    dataModule.pvp = true;
+    document.getElementById('user-interface').style.display = 'none';
+    //call the generateBoard function to generate the board
+    gameboardModule.generateBoard();
+});
+
+document.getElementById('pve-selection').addEventListener('click', () => {
+    dataModule.pvp = false;
+    document.getElementById('user-interface').style.display = 'none';
+    //call the generateBoard function to generate the board
+    gameboardModule.generateBoard();
+});
+
 //let testDiv = domModule.createElementIdClass('div','test', 'test');
 //document.getElementById('content').appendChild(testDiv);
 
@@ -248,4 +292,4 @@ gameboardModule.receiveAttack(3, 4);
 console.log(playerAndPCModule.getRandomChar())
 console.log(dataModule.usedCoordinates[0], dataModule.usedCoordinates[1])
 const newBool = playerAndPCModule.player()
-module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, add, sunkShip, newBool }; */
+module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, sunkShip, newBool }; */
