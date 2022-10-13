@@ -1,14 +1,19 @@
 import './style.css';
 
 const dataModule = (() => {
-    let player1fleetStatus = [];
-    let player2fleetStatus = []
-    let player1UsedCoordinates = [];
-    let player2UsedCoordinates = [];
+    //the gameboard arrays will store the ship objects, the attacked coordinates keeps track of what plays each player has already made.
+    let player1Gameboard = [];
+    let player2Gameboard = [];
+    let player1AttackedCoordinates = [];
+    let player2AttackedCoordinates = [];
     let pvp = false;
     let player1Turn = true;
+    //becomes true when the player is placing a ship
+    let shipSelection = false;
+    //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
+    let selectedShip = null;
 
-    return { player1fleetStatus, player2fleetStatus, player1UsedCoordinates, player2UsedCoordinates, player1Turn, pvp };
+    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -90,7 +95,7 @@ const gameLoopModule = (() => {
     return { userInterface };
 })();
 const gameboardModule = (() => {
-    let gameboard = function (ship, xCoordinates, yCoordinates) {
+    let placeShip = function (ship, xCoordinates, yCoordinates) {
 
         let shipPlacement = {
             shipObj: ship,
@@ -100,7 +105,7 @@ const gameboardModule = (() => {
         return shipPlacement;
     }
 
-    function receiveAttack(xCoordinates, yCoordinates) {
+    function receiveAttack(playerBoard, playerAttacksArr, xCoordinates, yCoordinates) {
         let xCoordinatesTrue = false;
         let yCoordinatesTrue = false;
         let xHitIndex = null;
@@ -108,21 +113,21 @@ const gameboardModule = (() => {
 
 
 
-        for (let i = 0; i < dataModule.fleetStatus.length; i++) {
-            console.log(dataModule.fleetStatus[i].shipObj.hits);
+        for (let i = 0; i < dataModule.playerBoard.length; i++) {
+            console.log(dataModule.playerBoard[i].shipObj.hits);
             //checks if xCoordinate hits
-            for (let j = 0; j < dataModule.fleetStatus[i].xAxis.length; j++) {
+            for (let j = 0; j < dataModule.playerBoard[i].xAxis.length; j++) {
 
 
-                if (dataModule.fleetStatus[i].xAxis[j] == xCoordinates) {
+                if (dataModule.playerBoard[i].xAxis[j] == xCoordinates) {
                     xHitIndex = j;
                     xCoordinatesTrue = true
                 }
             }
             //checks if yCoordinate hits
-            for (let j = 0; j < dataModule.fleetStatus[i].yAxis.length; j++) {
+            for (let j = 0; j < dataModule.playerBoard[i].yAxis.length; j++) {
 
-                if (dataModule.fleetStatus[i].yAxis[j] == yCoordinates) {
+                if (dataModule.playerBoard[i].yAxis[j] == yCoordinates) {
                     yHitIndex = j;
                     yCoordinatesTrue = true;
                 }
@@ -130,18 +135,18 @@ const gameboardModule = (() => {
             //if both coordinates hits are true, call hit function on correct ship and index of its hits array
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
                 //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
-                if (dataModule.fleetStatus[i].xAxis.length > dataModule.fleetStatus[i].yAxis.length) {
-                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, xHitIndex)
+                if (dataModule.playerBoard[i].xAxis.length > dataModule.playerBoard[i].yAxis.length) {
+                    shipModule.hit(dataModule.playerBoard[i].shipObj.hits, xHitIndex)
                     let hitCoordinates = { x: xCoordinates, y: yCoordinates };
-                    dataModule.usedCoordinates.push(hitCoordinates)
+                    dataModule.playerAttacksArr.push(hitCoordinates)
                 } else {
-                    shipModule.hit(dataModule.fleetStatus[i].shipObj.hits, yHitIndex)
+                    shipModule.hit(dataModule.playerBoard[i].shipObj.hits, yHitIndex)
                 }
                 return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
             } else {
                 //keep track of missed coordinates for DOM display
                 let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.usedCoordinates.push(missedXYCoordinates);
+                dataModule.playerAttacksArr.push(missedXYCoordinates);
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
                 return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
             }
@@ -150,56 +155,72 @@ const gameboardModule = (() => {
 
     function winCheck() {
         let sunkShips = 0;
-        for (let i = 0; i < dataModule.fleetStatus.length; i++) {
-            if (dataModule.fleetStatus[i].shipObj.sunk == true) {
+        for (let i = 0; i < dataModule.playerBoard.length; i++) {
+            if (dataModule.playerBoard[i].shipObj.sunk == true) {
                 sunkShips++;
             }
         }
 
-        if (sunkShips == dataModule.fleetStatus.length) {
+        if (sunkShips == dataModule.playerBoard.length) {
             return true; //alert('fleet sunk!')
-        } else if (sunkShips != dataModule.fleetStatus.length) {
+        } else if (sunkShips != dataModule.playerBoard.length) {
             return false //alert('get me my brown pants')
         }
     }
 
     //WiP
     const generateBoard = function () {
-        //create a gameboard generator that generates a div for each coordinate with a data-xaxis and
+        //a gameboard generator that generates a div for each coordinate with a data-xaxis and
         //a data-yaxis value for each div
 
-        //the next 6 lines creates a gameboard-container and appends the 2 gameboards inside of it
         let gameboardContainer = domModule.createElementIdClass('div', 'gameboard-container', '');
-        let player1GameBoard = domModule.createElementIdClass('div', 'player1-gameboard', '');
-        let player2GameBoard = domModule.createElementIdClass('div', 'player2-gameboard', '');
-        document.getElementById('content').appendChild(gameboardContainer);
-        document.getElementById('gameboard-container').appendChild(player1GameBoard);
-        document.getElementById('gameboard-container').appendChild(player2GameBoard);
+        let gameBoard = domModule.createElementIdClass('div', 'gameboard', '');
+        let opponentBoard = domModule.createElementIdClass('div', 'opponent-gameboard', '');
+        let gameboardHeader = domModule.createElementIdClass('p', 'gameboard-header', '');
+        let opponentGameboardHeader = domModule.createElementIdClass('p', 'opponent-gameboard-header', '');
+        let gameboardHeaderContainer = domModule.createElementIdClass('div', 'gameboard-header-container', '');
 
+        //this block creates gameboard title headers 
+        document.getElementById('content').appendChild(gameboardHeaderContainer);
+        document.getElementById('gameboard-header-container').appendChild(gameboardHeader);
+        document.getElementById('gameboard-header-container').appendChild(opponentGameboardHeader);
+        gameboardHeader.textContent = 'Your Fleet';
+        opponentGameboardHeader.textContent = 'Enemy Territory';
+
+        document.getElementById('content').appendChild(gameboardContainer);
+        document.getElementById('gameboard-container').appendChild(gameBoard);
+        document.getElementById('gameboard-container').appendChild(opponentBoard);
+
+        document.getElementById('content').style.flexDirection = 'column';
         //1 based indexing for more clarity when working with gameboard coordinates and data attributes
         for (let i = 1; i < 11; i++) {
             for (let j = 1; j < 11; j++) {
 
-                //this for loop block creates new divs with data-x/y-axis values and appends them to each player gameboard
                 let newDiv = document.createElement('div')
                 let newDiv2 = document.createElement('div')
-                newDiv.dataset.xaxis = `${i}`;
-                newDiv.dataset.yaxis = `${j}`;
+
+                //this mouseover event listener allows the DOM to display to users whether or not a ship placement is appropriate
+                newDiv.addEventListener('mouseover', () => {
+                    if (dataModule.shipSelection == true) {
+                        let placementShadow = selectedShip.length;
+                    }
+                })
+                //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
+                newDiv.dataset.xaxis = `${j}`;
+                newDiv.dataset.yaxis = `${i}`;
                 newDiv.className = 'gameboard-cell';
                 newDiv2.className = 'gameboard-cell';
-                newDiv2.setAttribute('data-xaxis', i);
-                newDiv2.setAttribute('data-yaxis', j);
-                document.getElementById('player1-gameboard').appendChild(newDiv);
-                document.getElementById('player2-gameboard').appendChild(newDiv2);
+                document.getElementById('gameboard').appendChild(newDiv);
+                document.getElementById('opponent-gameboard').appendChild(newDiv2);
             }
         }
     }
-    return { generateBoard, gameboard, receiveAttack, winCheck }
+    return { generateBoard, placeShip, receiveAttack, winCheck }
 })();
 
 const shipModule = (() => {
 
-    const ship = function () {
+    const shipConstructor = function () {
 
         let carrier = {
             length: 5,
@@ -258,7 +279,7 @@ const shipModule = (() => {
         }
     }
 
-    return { ship, hit, isSunk };
+    return { shipConstructor, hit, isSunk };
 })();
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,6 +291,8 @@ document.getElementById('pvp-selection').addEventListener('click', () => {
     document.getElementById('user-interface').style.display = 'none';
     //call the generateBoard function to generate the board
     gameboardModule.generateBoard();
+    document.getElementById('gameboard-container').style.display = 'flex';
+    document.getElementById('gameboard-container').style.justifyContent = 'space-around';
 });
 
 document.getElementById('pve-selection').addEventListener('click', () => {
@@ -277,6 +300,8 @@ document.getElementById('pve-selection').addEventListener('click', () => {
     document.getElementById('user-interface').style.display = 'none';
     //call the generateBoard function to generate the board
     gameboardModule.generateBoard();
+    document.getElementById('gameboard-container').style.display = 'flex'
+    document.getElementById('gameboard-container').style.justifyContent = 'space-around';
 });
 
 //let testDiv = domModule.createElementIdClass('div','test', 'test');

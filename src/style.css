@@ -1,9 +1,6 @@
-#black-box {
-    height: 60px;
-    width: 60px;
-    background-color: blanchedalmond;
+#content {
+    display: flex;
 }
-
 
 
 #test {
@@ -20,8 +17,28 @@
     margin: 10px;
 }
 
+
 .gameboard-cell {
-    height: 20px;
-    width: 20px;
+    height: 25px;
+    width: 25px;
     background-color: black;
+    border: 1px solid black;
+}
+
+#gameboard-header-container {
+    display: flex;
+    justify-content: space-around;
+}
+
+
+#gameboard {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+}
+
+#opponent-gameboard {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
 }
