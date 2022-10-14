@@ -9,11 +9,12 @@ const dataModule = (() => {
     let pvp = false;
     let player1Turn = true;
     //becomes true when the player is placing a ship
-    let shipSelection = false;
+    let shipSelection = true;
     //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
-    let selectedShip = null;
+    let selectedShip = {};
+    let verticalShipRotation = false;
 
-    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip };
+    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, verticalShipRotation };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -54,7 +55,7 @@ const playerAndPCModule = (() => {
             }
         }
     }
-
+    //deprecated
     function getRandomChar() {
         let result = '';
         let characters = 'abcdefghij';
@@ -104,8 +105,8 @@ const gameboardModule = (() => {
         }
         return shipPlacement;
     }
-
-    function receiveAttack(playerBoard, playerAttacksArr, xCoordinates, yCoordinates) {
+    //playerBoard should be the players board that is being attacked, playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player
+    function receiveAttack(playerBoard, playerAttackedCoordinates, xCoordinates, yCoordinates) {
         let xCoordinatesTrue = false;
         let yCoordinatesTrue = false;
         let xHitIndex = null;
@@ -138,7 +139,7 @@ const gameboardModule = (() => {
                 if (dataModule.playerBoard[i].xAxis.length > dataModule.playerBoard[i].yAxis.length) {
                     shipModule.hit(dataModule.playerBoard[i].shipObj.hits, xHitIndex)
                     let hitCoordinates = { x: xCoordinates, y: yCoordinates };
-                    dataModule.playerAttacksArr.push(hitCoordinates)
+                    dataModule.playerAttackedCoordinates.push(hitCoordinates)
                 } else {
                     shipModule.hit(dataModule.playerBoard[i].shipObj.hits, yHitIndex)
                 }
@@ -146,7 +147,7 @@ const gameboardModule = (() => {
             } else {
                 //keep track of missed coordinates for DOM display
                 let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.playerAttacksArr.push(missedXYCoordinates);
+                dataModule.playerAttackedCoordinates.push(missedXYCoordinates);
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
                 return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
             }
@@ -202,9 +203,37 @@ const gameboardModule = (() => {
                 //this mouseover event listener allows the DOM to display to users whether or not a ship placement is appropriate
                 newDiv.addEventListener('mouseover', () => {
                     if (dataModule.shipSelection == true) {
-                        let placementShadow = selectedShip.length;
+                        let selectedXaxis = newDiv.dataset.xaxis;
+                        let selectedYaxis = newDiv.dataset.yaxis;
+                        //test
+                        let temp = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"]`)
+                        temp.style.backgroundColor = 'green';
+                        console.log(selectedXaxis, selectedYaxis);
+                        //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction of the longest axis on each loop to create a selection shadow with background color
+                        //the for loop should also record the x/yaxis coordinates to track the location of the ship should it be placed in a valid location
+                        //the optional chaining in shadoweDiv should silence null errors when the shadow goes beyond the scope of the gameboard
+                        for (let i = 0; i < dataModule.selectedShip.length; i++) {
+                            console.log(1)
+                            if (dataModule.verticalShipRotation == false) {
+                                let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
+                                console.log(shadowedDiv);
+                                shadowedDiv.style.backgroundColor = 'green';
+                            } else if (dataModule.verticalShipRotation == true) {
+                                shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                console.log(shadowedDiv);
+                                shadowedDiv.style.backgroundColor = 'green';
+                            }
+                        }
                     }
-                })
+                });
+                //this click event listener should be responsible for placing ships and recording their coordinates to the respective gameboard object
+                newDiv.addEventListener('click', () => {
+
+                });
+                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes 
+                newDiv2.addEventListener('click', () => {
+                    gameboardModule.receiveAttack(newDiv2.dataset.xaxis, newDiv2.dataset.yaxis)
+                });
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
                 newDiv.dataset.xaxis = `${j}`;
                 newDiv.dataset.yaxis = `${i}`;
@@ -283,6 +312,10 @@ const shipModule = (() => {
 })();
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//below line is for the sake of testing only
+let testShip = shipModule.shipConstructor.battleship
+dataModule.selectedShip = { testShip };
 
 //sets the user interface display to flex on page open
 gameLoopModule.userInterface();
