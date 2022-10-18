@@ -11,10 +11,18 @@ const dataModule = (() => {
     //becomes true when the player is placing a ship
     let shipSelection = true;
     //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
-    let selectedShip = {};
+    let selectedShip = null;
     let verticalShipRotation = false;
+    //this object keeps track of the ships that have been placed in playerShipPlacement()
+    let shipPlacementTracker = {
+        carrier: false,
+        battleship: false,
+        destroyer: false,
+        submarine: false,
+        patrolBoat: false
+    }
 
-    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, verticalShipRotation };
+    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, verticalShipRotation, shipPlacementTracker };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -87,12 +95,39 @@ const playerAndPCModule = (() => {
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
+    //displays opening UI and choices for starting the game
     function userInterface() {
-        //The game loop should set up a new game by creating Players and Gameboards
         document.getElementById('user-interface').style.display = 'flex';
+        //The game loop should set up a new game by creating Players and Gameboards
+        document.getElementById('pvp-selection').addEventListener('click', () => {
+            dataModule.pvp = true;
+            document.getElementById('user-interface').style.display = 'none';
+            //call the generateBoard function to generate the board
+            gameboardModule.generateBoard();
+            document.getElementById('gameboard-container').style.display = 'flex';
+            document.getElementById('gameboard-container').style.justifyContent = 'space-around';
+            playerShipPlacement()
+        });
 
+        document.getElementById('pve-selection').addEventListener('click', () => {
+            dataModule.pvp = false;
+            document.getElementById('user-interface').style.display = 'none';
+            //call the generateBoard function to generate the board
+            gameboardModule.generateBoard();
+            document.getElementById('gameboard-container').style.display = 'flex'
+            document.getElementById('gameboard-container').style.justifyContent = 'space-around';
+            playerShipPlacement()
+        });
     }
 
+    //this function should prompt each player to place their ship objects
+    function playerShipPlacement() {
+
+        alert('player 1 place your ships.')
+        if (dataModule.player1Turn == false && dataModule.pvp == true) {
+            alert('player 2 place your ships')
+        }
+    }
     return { userInterface };
 })();
 const gameboardModule = (() => {
@@ -169,10 +204,9 @@ const gameboardModule = (() => {
         }
     }
 
-    //WiP
+    //a gameboard generator that generates a div for each coordinate with a data-xaxis and a data-yaxis value for each div
+    //event listeners for the players gameboard should place objects, listeners for the players targeting board should handle attack coordinates and storage info
     const generateBoard = function () {
-        //a gameboard generator that generates a div for each coordinate with a data-xaxis and
-        //a data-yaxis value for each div
 
         let gameboardContainer = domModule.createElementIdClass('div', 'gameboard-container', '');
         let gameBoard = domModule.createElementIdClass('div', 'gameboard', '');
@@ -199,24 +233,27 @@ const gameboardModule = (() => {
 
                 let newDiv = document.createElement('div')
                 let newDiv2 = document.createElement('div')
-
+                let selectedXaxis = parseInt(newDiv.dataset.xaxis);
+                let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                 //this mouseover event listener allows the DOM to display to users whether or not a ship placement is appropriate
-                newDiv.addEventListener('mouseover', () => {
+                newDiv.addEventListener('mouseenter', () => {
                     if (dataModule.shipSelection == true) {
-                        let selectedXaxis = newDiv.dataset.xaxis;
-                        let selectedYaxis = newDiv.dataset.yaxis;
+
+                        console.log(`selected xAxis ${selectedXaxis}, selected yAxis ${selectedYaxis}`);
                         //test
                         let temp = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"]`)
                         temp.style.backgroundColor = 'green';
-                        console.log(selectedXaxis, selectedYaxis);
                         //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction of the longest axis on each loop to create a selection shadow with background color
                         //the for loop should also record the x/yaxis coordinates to track the location of the ship should it be placed in a valid location
-                        //the optional chaining in shadoweDiv should silence null errors when the shadow goes beyond the scope of the gameboard
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             console.log(1)
                             if (dataModule.verticalShipRotation == false) {
                                 let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
                                 console.log(shadowedDiv);
+                                //displays red divs meaning incorrect placement
+                                if (selectedXaxis > 10 || selectedXaxis < 1 || selectedYaxis > 10 || selectedYaxis < 1) {
+                                    shadowedDiv.style.backgroundColor = 'red';
+                                }
                                 shadowedDiv.style.backgroundColor = 'green';
                             } else if (dataModule.verticalShipRotation == true) {
                                 shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
@@ -226,9 +263,43 @@ const gameboardModule = (() => {
                         }
                     }
                 });
+                //this event listener reverses the coloring that the mouseover event listener applies when the selected ship is not placed and the mouse is moved
+                newDiv.addEventListener('mouseleave', () => {
+                    if (dataModule.shipSelection == true) {
+                        //test
+                        let temp = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"]`)
+                        temp.style.backgroundColor = 'black';
+                        for (let i = 0; i < dataModule.selectedShip.length; i++) {
+                            console.log(1)
+                            if (dataModule.verticalShipRotation == false) {
+                                let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
+                                console.log(shadowedDiv);
+                                shadowedDiv.style.backgroundColor = 'black';
+                            } else if (dataModule.verticalShipRotation == true) {
+                                shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                console.log(shadowedDiv);
+                                shadowedDiv.style.backgroundColor = 'black';
+                            }
+                        }
+                    }
+                });
+
                 //this click event listener should be responsible for placing ships and recording their coordinates to the respective gameboard object
                 newDiv.addEventListener('click', () => {
 
+                    if (dataModule.shipSelection == true) {
+                        if (selectedXaxis < 10 && selectedXaxis > 1 && selectedYaxis < 10 && selectedYaxis > 1) {
+                            // a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
+                            for (const property in dataModule.shipPlacementTracker) {
+                                if (dataModule.shipPlacementTracker[property] == false) {
+                                    dataModule.selectedShip = property;
+                                }
+                            }
+                            gameBoardModule.placeShip(dataModule.selectedShip, selectedXaxis, selectedYaxis);
+                        } else {
+                            alert('invalid placement;')
+                        }
+                    }
                 });
                 //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes 
                 newDiv2.addEventListener('click', () => {
@@ -313,29 +384,12 @@ const shipModule = (() => {
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-//below line is for the sake of testing only
+//below 2 lines is for the sake of testing only
 let testShip = shipModule.shipConstructor.battleship
 dataModule.selectedShip = { testShip };
 
-//sets the user interface display to flex on page open
 gameLoopModule.userInterface();
-document.getElementById('pvp-selection').addEventListener('click', () => {
-    dataModule.pvp = true;
-    document.getElementById('user-interface').style.display = 'none';
-    //call the generateBoard function to generate the board
-    gameboardModule.generateBoard();
-    document.getElementById('gameboard-container').style.display = 'flex';
-    document.getElementById('gameboard-container').style.justifyContent = 'space-around';
-});
 
-document.getElementById('pve-selection').addEventListener('click', () => {
-    dataModule.pvp = false;
-    document.getElementById('user-interface').style.display = 'none';
-    //call the generateBoard function to generate the board
-    gameboardModule.generateBoard();
-    document.getElementById('gameboard-container').style.display = 'flex'
-    document.getElementById('gameboard-container').style.justifyContent = 'space-around';
-});
 
 //let testDiv = domModule.createElementIdClass('div','test', 'test');
 //document.getElementById('content').appendChild(testDiv);
