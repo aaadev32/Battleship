@@ -238,27 +238,28 @@ const gameboardModule = (() => {
                         let selectedXaxis = parseInt(newDiv.dataset.xaxis);
                         let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                         let firstIteration = true;
-                        console.log(`selected xAxis ${selectedXaxis}, selected yAxis ${selectedYaxis}`);
                         //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction of the longest axis on each loop to create a selection shadow with background color
                         //the for loop should also record the x/yaxis coordinates to track the location of the ship should it be placed in a valid location
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             if (dataModule.verticalShipRotation == false) {
-                                //keeps the shadowedDiv from starting +1 from the mouseover point
+                                //keeps the shipShadow from starting +1 from the mouseover point
                                 if (firstIteration == true) {
                                     selectedXaxis -= 1;
                                     firstIteration = false;
                                 }
-                                let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
-                                console.log(shadowedDiv);
-                                //displays red divs meaning incorrect placement
-                                if (selectedXaxis >= 10 || selectedXaxis <= 1 || selectedYaxis >= 10 || selectedYaxis <= 1) {
-                                    shadowedDiv.style.backgroundColor = 'red';
+                                let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
+                                //stops divs that represent placed ships from having their color changed
+                                if (shipShadow.style.backgroundColor == 'green') {
+                                    return 1;
                                 }
-                                shadowedDiv.style.backgroundColor = 'green';
+                                shipShadow.style.backgroundColor = 'blue';
                             } else if (dataModule.verticalShipRotation == true) {
-                                shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
-                                console.log(shadowedDiv);
-                                shadowedDiv.style.backgroundColor = 'green';
+                                shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                //stops divs that represent placed ships from having their color changed
+                                if (shipShadow.style.backgroundColor == 'green') {
+                                    return 1;
+                                }
+                                shipShadow.style.backgroundColor = 'blue';
                             }
                         }
                     }
@@ -270,74 +271,99 @@ const gameboardModule = (() => {
                     let firstIteration = true;
 
                     if (dataModule.shipSelection == true) {
-                        for (let i = 0; i < dataModule.selectedShip.length; i++) {
+                        //adding + 1 to the selectedShip.length insures that there wont be a left over blue placement div as the blue shipShadow shrinks by 1 when the user places a ship
+                        for (let i = 0; i < dataModule.selectedShip.length + 1; i++) {
+                            //push the divs current colors to previousColors array in case the user decides to place a ship, the divs should keep the green placement color as opposed to turning back to the board color black
                             if (dataModule.verticalShipRotation == false) {
-                                //keeps the shadowedDiv from leaving 1 block at the furthest point along the main axis when a ship has been placed
+                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed
                                 if (firstIteration == true) {
                                     selectedXaxis -= 1;
                                     firstIteration = false;
                                 }
-                                let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
-
-                                shadowedDiv.style.backgroundColor = 'black';
+                                let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
+                                //stops divs that represent placed ships from having their color changed
+                                if (shipShadow.style.backgroundColor == 'green') {
+                                    return 1;
+                                }
+                                shipShadow.style.backgroundColor = 'black';
                             } else if (dataModule.verticalShipRotation == true) {
-                                shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
-                                shadowedDiv.style.backgroundColor = 'black';
+                                shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                //stops divs that represent placed ships from having their color changed
+                                if (shipShadow.style.backgroundColor == 'green') {
+                                    return 1;
+                                }
+                                shipShadow.style.backgroundColor = 'black';
                             }
                         }
                     }
                 });
 
-                //this click event listener should be responsible for placing ships and recording their coordinates to the respective gameboard object
+                //this click event listener should be responsible for placing ships in the DOM and recording their coordinates to the respective gameboard object
                 newDiv.addEventListener('click', () => {
                     let selectedXaxis = parseInt(newDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
-
+                    let firstIteration = true
                     if (dataModule.shipSelection == true) {
-                        if (selectedXaxis <= 10 && selectedXaxis >= 1 && selectedYaxis <= 10 && selectedYaxis >= 1) {
-                            //resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
-                            if (dataModule.shipPlacementTracker.patrolBoat == true) {
-                                for (const property in dataModule.shipPlacementTracker) {
-                                    dataModule.shipPlacementTracker[property] = false;
-                                }
-                            }
-                            //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
-                            for (const property in dataModule.shipPlacementTracker) {
-                                if (dataModule.shipPlacementTracker[property] == false) {
-                                    console.log(`${property}: ${dataModule.shipPlacementTracker[property]}`);
-                                    dataModule.shipPlacementTracker[property] = true;
-                                    console.log(dataModule.selectedShip);
-                                    //the shipObj contains all ships and will be access through selected ship to be placed on the playerNGameboard arr
-                                    return dataModule.selectedShip = shipObj[property];
-                                }
-                                //this block marks the divs where the ship has been placed
-                                for (let i = 0; i < dataModule.selectedShip.length; i++) {
-                                    if (dataModule.verticalShipRotation == false) {
-                                        let shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
-                                        //displays red divs meaning incorrect placement
-                                        if (selectedXaxis >= 10 || selectedXaxis <= 1 || selectedYaxis >= 10 || selectedYaxis <= 1) {
-                                            shadowedDiv.style.backgroundColor = 'red';
-                                        }
-                                        shadowedDiv.style.backgroundColor = 'green';
-                                    } else if (dataModule.verticalShipRotation == true) {
-                                        shadowedDiv = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
-                                        shadowedDiv.style.backgroundColor = 'green';
-                                    }
-                                }
-                                gameboardModule.placeShip(dataModule.selectedShip, selectedXaxis, selectedYaxis);
-                            }
-                        } else {
-                            alert('invalid placement;')
+                        //checks for invalid placements beyond the parameters of the board axis,the axis + ship length is compared to 11 instead of 10 because the axis are 1 based indexing so you must account for 10 when starting from 1 and comparing the ship length from current selected axis
+                        if (selectedXaxis + dataModule.selectedShip.length > 11 || selectedYaxis + dataModule.selectedShip.length > 11) {
+                            console.log(selectedXaxis, dataModule.selectedShip.length)
+                            return alert('invalid placement!');
                         }
+                        //this block marks the divs where the ship has been placed
+                        for (let i = 0; i < dataModule.selectedShip.length; i++) {
+                            //keeps the shipPlacement from starting +1 from the mouseover point
+                            if (firstIteration == true) {
+                                selectedXaxis -= 1;
+                                firstIteration = false;
+                            }
+                            if (dataModule.verticalShipRotation == false) {
+                                let shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
+
+                                shipPlacement.style.backgroundColor = 'green';
+                            } else if (dataModule.verticalShipRotation == true) {
+                                shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                shipPlacement.style.backgroundColor = 'green';
+                            }
+                        }
+                        //the remaining blocks handle ship placement logic
+                        //resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
+                        if (dataModule.shipPlacementTracker.patrolBoat == true) {
+                            for (const property in dataModule.shipPlacementTracker) {
+                                dataModule.shipPlacementTracker[property] = false;
+                            }
+                        }
+                        //below if else statements handle pushing the placed ship to the proper players gameboard array
+                        let newShipPlacement = gameboardModule.placeShip(dataModule.selectedShip, selectedXaxis, selectedYaxis);
+                        console.log(newShipPlacement)
+                        if (dataModule.player1Turn == true) {
+                            dataModule.player1Gameboard.push(newShipPlacement);
+                            console.log(`player1Gameboard${dataModule.player1Gameboard}`);
+                        } else {
+                            player2Gameboard.push(newShipPlacement);
+                            console.log(`player2Gameboard${dataModule.player1Gameboard}`);
+                        }
+                        console.log(dataModule.player1Gameboard)
+                        //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
+                        for (const property in dataModule.shipPlacementTracker) {
+                            if (dataModule.shipPlacementTracker[property] == false) {
+                                dataModule.shipPlacementTracker[property] = true;
+                                //the shipObj contains all ships and will be access through selected ship to be placed on the playerNGameboard arr
+                                return dataModule.selectedShip = shipObj[property];
+                            }
+                        }
+                    } else {
+                        alert('placement phase over')
                     }
                 });
                 //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes 
                 newDiv2.addEventListener('click', () => {
                     let selectedXaxis = parseInt(newDiv2.dataset.xaxis);
                     let selectedYaxis = parseInt(newDiv2.dataset.yaxis);
-
-                    gameboardModule.receiveAttack(newDiv2.dataset.xaxis, newDiv2.dataset.yaxis)
+                    //keeps from attacking opponent board during ship placement phase
+                    if (dataModule.shipSelection == false) {
+                        gameboardModule.receiveAttack(newDiv2.dataset.xaxis, newDiv2.dataset.yaxis)
+                    }
                 });
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
                 newDiv.dataset.xaxis = `${j}`;
