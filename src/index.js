@@ -13,7 +13,7 @@ const dataModule = (() => {
     //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
     let selectedShip = {};
     let verticalShipRotation = false;
-    //this object keeps track of the ships that have been placed in playerShipPlacement()
+    //this object keeps track of the ships that have been placed during a players turn (resets back to false at end of turn)
     let shipPlacementTracker = {
         carrier: false,
         battleship: false,
@@ -37,7 +37,7 @@ const domModule = (() => {
 
 const playerAndPCModule = (() => {
     //this function deals hiding player screens between device handoffs and 
-    function player() {
+    function playerTurnHandler() {
         //if its a pvp game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true) {
             if (dataModule.player1Turn == true) {
@@ -91,7 +91,7 @@ const playerAndPCModule = (() => {
         //if the random coordinate pairs do not match any in the usedCoordinates array they should be passed through the receive attack function
         gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
     }
-    return { player, getRandomChar, pcPlay }
+    return { playerTurnHandler, getRandomChar, pcPlay }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
@@ -109,7 +109,6 @@ const gameLoopModule = (() => {
             //manually calling the carrier object to be default selection upon choosing the game type as well as manually making its shipPlacementTracker true to prevent problems with for in loop
             dataModule.selectedShip = shipModule.shipConstructor().carrier;
             dataModule.shipPlacementTracker.carrier = true
-            playerShipPlacement()
         });
 
         document.getElementById('pve-selection').addEventListener('click', () => {
@@ -122,7 +121,6 @@ const gameLoopModule = (() => {
             //manually calling the carrier object to be default selection upon choosing the game type as well as manually making its shipPlacementTracker true to prevent problems with for in loop
             dataModule.selectedShip = shipModule.shipConstructor().carrier;
             dataModule.shipPlacementTracker.carrier = true
-            playerShipPlacement()
         });
     }
 
@@ -133,8 +131,14 @@ const gameboardModule = (() => {
 
         let shipPlacement = {
             shipObj: ship,
-            xAxis: xCoordinates,
-            yAxis: yCoordinates
+            xAxis: [],
+            yAxis: []
+        }
+        for (let i = 0; i < xCoordinates.length; i++) {
+            shipPlacement.xAxis.push(xCoordinates);
+        }
+        for (let i = 0; i < yCoordinates.length; i++) {
+            shipPlacement.yAxis.push(yCoordinates);
         }
         return shipPlacement;
     }
@@ -225,6 +229,7 @@ const gameboardModule = (() => {
         document.getElementById('gameboard-container').appendChild(opponentBoard);
 
         document.getElementById('content').style.flexDirection = 'column';
+        //the below 2 for loop i,j values are used to create the divs and data attributes for the gameboard as well as set event handlers
         //1 based indexing for more clarity when working with gameboard coordinates and data attributes
         for (let i = 1; i < 11; i++) {
             for (let j = 1; j < 11; j++) {
@@ -238,7 +243,7 @@ const gameboardModule = (() => {
                         let selectedXaxis = parseInt(newDiv.dataset.xaxis);
                         let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                         let firstIteration = true;
-                        //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction of the longest axis on each loop to create a selection shadow with background color
+                        //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction main axis to create a selection shadow with background color
                         //the for loop should also record the x/yaxis coordinates to track the location of the ship should it be placed in a valid location
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             if (dataModule.verticalShipRotation == false) {
@@ -303,19 +308,53 @@ const gameboardModule = (() => {
                     let selectedXaxis = parseInt(newDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
-                    let firstIteration = true
+                    let firstShipPlacementMarkerIteration = true;
+                    let firstShipPlacementArrIteration = true;
+                    let xCoordinateArr = [];
+                    let yCoordinateArr = [];
                     if (dataModule.shipSelection == true) {
-                        //checks for invalid placements beyond the parameters of the board axis,the axis + ship length is compared to 11 instead of 10 because the axis are 1 based indexing so you must account for 10 when starting from 1 and comparing the ship length from current selected axis
-                        if (selectedXaxis + dataModule.selectedShip.length > 11 || selectedYaxis + dataModule.selectedShip.length > 11) {
-                            console.log(selectedXaxis, dataModule.selectedShip.length)
-                            return alert('invalid placement!');
+                        //checks for invalid placements on the xAxis
+                        if (selectedXaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == false) {
+                            console.log(selectedXaxis, selectedYaxis, dataModule.selectedShip.length)
+                            return alert('invalid placement on the X Axis!');
+                            //values greater than 11 on the yAxis are only possible when vertical ship rotation is active
+                        } else if (selectedYaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == true) {
+                            return alert('invalid placement on the Y Axis!')
                         }
-                        //this block marks the divs where the ship has been placed
+                        //this block pushes the coordinates to the ship objects coordinates array
+                        for (let i = 0; i < dataModule.selectedShip.length; i++) {
+
+                            if (dataModule.verticalShipRotation == false) {
+                                xCoordinateArr.push(selectedXaxis + i);
+                                if (firstShipPlacementArrIteration == true) {
+                                    yCoordinateArr.push(selectedYaxis);
+                                    firstShipPlacementArrIteration = false;
+                                }
+                            } else if (dataModule.verticalShipRotation == true) {
+                                if (firstShipPlacementArrIteration == true) {
+                                    xCoordinateArr.push(selectedXaxis);
+                                    firstShipPlacementArrIteration = false;
+                                }
+                                yCoordinateArr.push(selectedYaxis + i);
+                            }
+                            if (i == dataModule.selectedShip.length - 1) {
+                                console.log('test')
+                                let newShipPlacement = placeShip(dataModule.selectedShip, xCoordinateArr, yCoordinateArr)
+                                if (dataModule.player1Turn == true) {
+                                    dataModule.player1Gameboard.push(newShipPlacement);
+                                } else {
+                                    dataModule.player2Gameboard.push(newShipPlacement);
+                                }
+                            }
+
+                        }
+                        console.log(dataModule.player1Gameboard)
+                        //this block marks the divs where the ship has been placed 
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             //keeps the shipPlacement from starting +1 from the mouseover point
-                            if (firstIteration == true) {
+                            if (firstShipPlacementMarkerIteration == true) {
                                 selectedXaxis -= 1;
-                                firstIteration = false;
+                                firstShipPlacementMarkerIteration = false;
                             }
                             if (dataModule.verticalShipRotation == false) {
                                 let shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
@@ -333,17 +372,6 @@ const gameboardModule = (() => {
                                 dataModule.shipPlacementTracker[property] = false;
                             }
                         }
-                        //below if else statements handle pushing the placed ship to the proper players gameboard array
-                        let newShipPlacement = gameboardModule.placeShip(dataModule.selectedShip, selectedXaxis, selectedYaxis);
-                        console.log(newShipPlacement)
-                        if (dataModule.player1Turn == true) {
-                            dataModule.player1Gameboard.push(newShipPlacement);
-                            console.log(`player1Gameboard${dataModule.player1Gameboard}`);
-                        } else {
-                            player2Gameboard.push(newShipPlacement);
-                            console.log(`player2Gameboard${dataModule.player1Gameboard}`);
-                        }
-                        console.log(dataModule.player1Gameboard)
                         //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
                         for (const property in dataModule.shipPlacementTracker) {
                             if (dataModule.shipPlacementTracker[property] == false) {
