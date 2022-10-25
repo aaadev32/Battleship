@@ -134,12 +134,8 @@ const gameboardModule = (() => {
             xAxis: [],
             yAxis: []
         }
-        for (let i = 0; i < xCoordinates.length; i++) {
-            shipPlacement.xAxis.push(xCoordinates);
-        }
-        for (let i = 0; i < yCoordinates.length; i++) {
-            shipPlacement.yAxis.push(yCoordinates);
-        }
+        shipPlacement.xAxis.push(xCoordinates);
+        shipPlacement.yAxis.push(yCoordinates);
         return shipPlacement;
     }
     //playerBoard should be the players board that is being attacked, playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player
@@ -308,8 +304,11 @@ const gameboardModule = (() => {
                     let selectedXaxis = parseInt(newDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(newDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
-                    let firstShipPlacementMarkerIteration = true;
-                    let firstShipPlacementArrIteration = true;
+                    let shipPlacementMarkerIteration = true;
+                    let firstShipPlacemenIteration = true;
+                    let occupiedXCoordinate = false;
+                    let occupiedYCoordinate = false;
+                    let currentPlayerGameboard = null;
                     let xCoordinateArr = [];
                     let yCoordinateArr = [];
                     if (dataModule.shipSelection == true) {
@@ -321,23 +320,64 @@ const gameboardModule = (() => {
                         } else if (selectedYaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == true) {
                             return alert('invalid placement on the Y Axis!')
                         }
+                        //this checks for ships already placed on the selected coordinates
+                        if (dataModule.player1Turn == true) {
+                            currentPlayerGameboard = dataModule.player1Gameboard;
+                        } else {
+                            currentPlayerGameboard = dataModule.player2Gameboard;
+                        }
+                        for (let i = 0; i < currentPlayerGameboard.length; i++) {
+                            for (let j = 0; j < currentPlayerGameboard[i].xAxis.length; j++) {
+                                console.log(`xAxis ${currentPlayerGameboard[i].xAxis[j]}, selected xAxis ${selectedXaxis}`)
+                                if (currentPlayerGameboard[i].xAxis[j] == selectedXaxis) {
+                                    occupiedXCoordinate = true;
+                                }
+                            }
+                            for (let j = 0; j < currentPlayerGameboard[i].yAxis.length; j++) {
+                                console.log(`yAxis ${currentPlayerGameboard[i].yAxis[j]}, selected yAxis ${selectedYaxis}`)
+                                if (currentPlayerGameboard[i].yAxis[j] == selectedYaxis) {
+                                    occupiedYCoordinate = true;
+                                }
+                            }
+                            /*
+                            for (const property in currentPlayerGameboard[i]) {
+    console.log(`${property}, ${currentPlayerGameboard[i][property]}, xAxis selection ${selectedXaxis}`)
+    if (property == 'xAxis' && currentPlayerGameboard[i][property] == selectedXaxis) {
+        occupiedXCoordinate = true;
+        console.log('x coordinate taken!')
+    }
+}
+for (const property in currentPlayerGameboard[i]) {
+    console.log(`${property}, ${currentPlayerGameboard[i][property]}, yAxis selection ${selectedYaxis}`)
+    if (property == 'yAxis' && currentPlayerGameboard[i][property] == selectedYaxis) {
+        occupiedYCoordinate = true;
+        console.log('y coordinate taken!')
+    }
+} */
+                        }
+                        if (occupiedXCoordinate && occupiedYCoordinate == true) {
+                            return alert('these coordinates are occupied by another ship! please choose different coordinates.');
+                        }
                         //this block pushes the coordinates to the ship objects coordinates array
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
 
                             if (dataModule.verticalShipRotation == false) {
                                 xCoordinateArr.push(selectedXaxis + i);
-                                if (firstShipPlacementArrIteration == true) {
+                                //if the placement isnt vertical the yAxis only needs to be recorded once
+                                if (firstShipPlacemenIteration == true) {
                                     yCoordinateArr.push(selectedYaxis);
-                                    firstShipPlacementArrIteration = false;
+                                    firstShipPlacemenIteration = false;
                                 }
                             } else if (dataModule.verticalShipRotation == true) {
-                                if (firstShipPlacementArrIteration == true) {
-                                    xCoordinateArr.push(selectedXaxis);
-                                    firstShipPlacementArrIteration = false;
-                                }
                                 yCoordinateArr.push(selectedYaxis + i);
+                                //if the placement is vertical the xAxis only needs to be recorded once
+                                if (firstShipPlacemenIteration == true) {
+                                    xCoordinateArr.push(selectedXaxis);
+                                    firstShipPlacemenIteration = false;
+                                }
                             }
-                            if (i == dataModule.selectedShip.length - 1) {
+                            //places the ship once all coordinates of the ship length have been accounted for
+                            if (i == dataModule.selectedShip.length - 2) {
                                 console.log('test')
                                 let newShipPlacement = placeShip(dataModule.selectedShip, xCoordinateArr, yCoordinateArr)
                                 if (dataModule.player1Turn == true) {
@@ -352,9 +392,9 @@ const gameboardModule = (() => {
                         //this block marks the divs where the ship has been placed 
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             //keeps the shipPlacement from starting +1 from the mouseover point
-                            if (firstShipPlacementMarkerIteration == true) {
+                            if (shipPlacementMarkerIteration == true) {
                                 selectedXaxis -= 1;
-                                firstShipPlacementMarkerIteration = false;
+                                shipPlacementMarkerIteration = false;
                             }
                             if (dataModule.verticalShipRotation == false) {
                                 let shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
