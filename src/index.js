@@ -1,4 +1,5 @@
 import './style.css';
+import rotationIconImg from './Images/Refresh_icon.svg.png'
 
 const dataModule = (() => {
     //the gameboard arrays will store the ship objects, the attacked coordinates keeps track of what plays each player has already made.
@@ -206,16 +207,22 @@ const gameboardModule = (() => {
     //event listeners for the players gameboard should place objects, listeners for the players targeting board should handle attack coordinates and storage info
     const generateBoard = function () {
 
+
         let gameboardContainer = domModule.createElementIdClass('div', 'gameboard-container', '');
         let gameBoard = domModule.createElementIdClass('div', 'gameboard', '');
         let opponentBoard = domModule.createElementIdClass('div', 'opponent-gameboard', '');
         let gameboardHeader = domModule.createElementIdClass('p', 'gameboard-header', '');
         let opponentGameboardHeader = domModule.createElementIdClass('p', 'opponent-gameboard-header', '');
         let gameboardHeaderContainer = domModule.createElementIdClass('div', 'gameboard-header-container', '');
+        let rotationIcon = document.createElement('img');
+        rotationIcon.src = rotationIconImg;
+        rotationIcon.id = 'rotation-icon';
+        rotationIcon.onclick = () =>{ if(dataModule.verticalShipRotation == true){ dataModule.verticalShipRotation = false}else {dataModule.verticalShipRotation = true}}
 
         //this block creates gameboard title headers 
         document.getElementById('content').appendChild(gameboardHeaderContainer);
         document.getElementById('gameboard-header-container').appendChild(gameboardHeader);
+        document.getElementById('gameboard-header-container').appendChild(rotationIcon);
         document.getElementById('gameboard-header-container').appendChild(opponentGameboardHeader);
         gameboardHeader.textContent = 'Your Fleet';
         opponentGameboardHeader.textContent = 'Enemy Territory';
@@ -306,8 +313,6 @@ const gameboardModule = (() => {
                     let shipObj = shipModule.shipConstructor();
                     let shipPlacementMarkerIteration = true;
                     let firstShipPlacemenIteration = true;
-                    let occupiedXCoordinate = false;
-                    let occupiedYCoordinate = false;
                     let currentPlayerGameboard = null;
                     let xCoordinateArr = [];
                     let yCoordinateArr = [];
@@ -320,13 +325,16 @@ const gameboardModule = (() => {
                         } else if (selectedYaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == true) {
                             return alert('invalid placement on the Y Axis!')
                         }
-                        //this checks for ships already placed on the selected coordinates
+                        //sets up the player gameboard to be iterated in the next for loop block
                         if (dataModule.player1Turn == true) {
                             currentPlayerGameboard = dataModule.player1Gameboard;
                         } else {
                             currentPlayerGameboard = dataModule.player2Gameboard;
                         }
+                        //this checks for ships already placed on the selected coordinates
                         for (let i = 0; i < currentPlayerGameboard.length; i++) {
+                            let occupiedXCoordinate = false;
+                            let occupiedYCoordinate = false;
                             currentPlayerGameboard[i].xAxis.forEach(coordinate => {
                                 console.log(`xCoordinates ${coordinate}, selected xCoordinate ${selectedXaxis}`)
                                 if (selectedXaxis == coordinate) {
@@ -342,18 +350,21 @@ const gameboardModule = (() => {
                                     console.log('y already selected')
                                 }
                             });
+                            if (occupiedXCoordinate && occupiedYCoordinate == true) {
+                                return alert('these coordinates are occupied by another ship! please choose different coordinates.');
+                            }
                         }
-                        if (occupiedXCoordinate && occupiedYCoordinate == true) {
-                            return alert('these coordinates are occupied by another ship! please choose different coordinates.');
-                        }
+
                         //this block pushes the coordinates to the ship objects coordinates array
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
 
                             if (dataModule.verticalShipRotation == false) {
                                 xCoordinateArr.push(selectedXaxis + i);
+                                console.log(selectedXaxis + i)
                                 //if the placement isnt vertical the yAxis only needs to be recorded once
                                 if (firstShipPlacemenIteration == true) {
                                     yCoordinateArr.push(selectedYaxis);
+                                    console.log(selectedYaxis + i)
                                     firstShipPlacemenIteration = false;
                                 }
                             } else if (dataModule.verticalShipRotation == true) {
@@ -365,7 +376,7 @@ const gameboardModule = (() => {
                                 }
                             }
                             //places the ship once all coordinates of the ship length have been accounted for
-                            if (i == dataModule.selectedShip.length - 2) {
+                            if (i == dataModule.selectedShip.length - 1) {
                                 console.log('test')
                                 let newShipPlacement = placeShip(dataModule.selectedShip, xCoordinateArr, yCoordinateArr)
                                 if (dataModule.player1Turn == true) {

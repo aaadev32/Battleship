@@ -17,6 +17,16 @@
     margin: 10px;
 }
 
+#rotation-icon {
+    position: absolute;
+    height: 50px;
+    width: 50px;
+}
+
+#rotation-icon:hover {
+    background-color: rgba(143, 137, 137, 0.4);
+    border-radius: 5px;
+}
 
 .gameboard-cell {
     height: 25px;
