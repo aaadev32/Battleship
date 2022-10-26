@@ -131,11 +131,11 @@ const gameboardModule = (() => {
 
         let shipPlacement = {
             shipObj: ship,
-            xAxis: [],
-            yAxis: []
+            xAxis: null,
+            yAxis: null
         }
-        shipPlacement.xAxis.push(xCoordinates);
-        shipPlacement.yAxis.push(yCoordinates);
+        shipPlacement.xAxis = xCoordinates;
+        shipPlacement.yAxis = yCoordinates;
         return shipPlacement;
     }
     //playerBoard should be the players board that is being attacked, playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player
@@ -327,33 +327,21 @@ const gameboardModule = (() => {
                             currentPlayerGameboard = dataModule.player2Gameboard;
                         }
                         for (let i = 0; i < currentPlayerGameboard.length; i++) {
-                            for (let j = 0; j < currentPlayerGameboard[i].xAxis.length; j++) {
-                                console.log(`xAxis ${currentPlayerGameboard[i].xAxis[j]}, selected xAxis ${selectedXaxis}`)
-                                if (currentPlayerGameboard[i].xAxis[j] == selectedXaxis) {
+                            currentPlayerGameboard[i].xAxis.forEach(coordinate => {
+                                console.log(`xCoordinates ${coordinate}, selected xCoordinate ${selectedXaxis}`)
+                                if (selectedXaxis == coordinate) {
                                     occupiedXCoordinate = true;
+                                    console.log('x already selected')
                                 }
-                            }
-                            for (let j = 0; j < currentPlayerGameboard[i].yAxis.length; j++) {
-                                console.log(`yAxis ${currentPlayerGameboard[i].yAxis[j]}, selected yAxis ${selectedYaxis}`)
-                                if (currentPlayerGameboard[i].yAxis[j] == selectedYaxis) {
+
+                            });
+                            currentPlayerGameboard[i].yAxis.forEach(coordinate => {
+                                console.log(`yCoordinates ${coordinate}, selected yCoordinate ${selectedYaxis}`)
+                                if (selectedYaxis == coordinate) {
                                     occupiedYCoordinate = true;
+                                    console.log('y already selected')
                                 }
-                            }
-                            /*
-                            for (const property in currentPlayerGameboard[i]) {
-    console.log(`${property}, ${currentPlayerGameboard[i][property]}, xAxis selection ${selectedXaxis}`)
-    if (property == 'xAxis' && currentPlayerGameboard[i][property] == selectedXaxis) {
-        occupiedXCoordinate = true;
-        console.log('x coordinate taken!')
-    }
-}
-for (const property in currentPlayerGameboard[i]) {
-    console.log(`${property}, ${currentPlayerGameboard[i][property]}, yAxis selection ${selectedYaxis}`)
-    if (property == 'yAxis' && currentPlayerGameboard[i][property] == selectedYaxis) {
-        occupiedYCoordinate = true;
-        console.log('y coordinate taken!')
-    }
-} */
+                            });
                         }
                         if (occupiedXCoordinate && occupiedYCoordinate == true) {
                             return alert('these coordinates are occupied by another ship! please choose different coordinates.');
