@@ -217,7 +217,7 @@ const gameboardModule = (() => {
         let rotationIcon = document.createElement('img');
         rotationIcon.src = rotationIconImg;
         rotationIcon.id = 'rotation-icon';
-        rotationIcon.onclick = () =>{ if(dataModule.verticalShipRotation == true){ dataModule.verticalShipRotation = false}else {dataModule.verticalShipRotation = true}}
+        rotationIcon.onclick = () => { if (dataModule.verticalShipRotation == true) { dataModule.verticalShipRotation = false } else { dataModule.verticalShipRotation = true } }
 
         //this block creates gameboard title headers 
         document.getElementById('content').appendChild(gameboardHeaderContainer);
@@ -258,14 +258,21 @@ const gameboardModule = (() => {
                                 let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
                                 //stops divs that represent placed ships from having their color changed
                                 if (shipShadow.style.backgroundColor == 'green') {
-                                    return 1;
+                                    shipShadow.style.backgroundColor == 'green';
+                                    continue;
                                 }
                                 shipShadow.style.backgroundColor = 'blue';
                             } else if (dataModule.verticalShipRotation == true) {
-                                shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                //keeps the shipShadow from starting +1 from the mouseover point
+                                if (firstIteration == true) {
+                                    selectedYaxis -= 1;
+                                    firstIteration = false;
+                                }
+                                let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
                                 //stops divs that represent placed ships from having their color changed
                                 if (shipShadow.style.backgroundColor == 'green') {
-                                    return 1;
+                                    shipShadow.style.backgroundColor == 'green';
+                                    continue;
                                 }
                                 shipShadow.style.backgroundColor = 'blue';
                             }
@@ -291,14 +298,21 @@ const gameboardModule = (() => {
                                 let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
                                 //stops divs that represent placed ships from having their color changed
                                 if (shipShadow.style.backgroundColor == 'green') {
-                                    return 1;
+                                    shipShadow.style.backgroundColor == 'green';
+                                    continue;
                                 }
                                 shipShadow.style.backgroundColor = 'black';
                             } else if (dataModule.verticalShipRotation == true) {
-                                shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed
+                                if (firstIteration == true) {
+                                    selectedYaxis -= 1;
+                                    firstIteration = false;
+                                }
+                                let shipShadow = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
                                 //stops divs that represent placed ships from having their color changed
                                 if (shipShadow.style.backgroundColor == 'green') {
-                                    return 1;
+                                    shipShadow.style.backgroundColor == 'green';
+                                    continue;
                                 }
                                 shipShadow.style.backgroundColor = 'black';
                             }
@@ -331,28 +345,47 @@ const gameboardModule = (() => {
                         } else {
                             currentPlayerGameboard = dataModule.player2Gameboard;
                         }
-                        //this checks for ships already placed on the selected coordinates
+                        //this checks for ships already placed on the selected coordinates on the current player gameboard.
+                        //each ship objects xAxis and yAxis property keys are iterated and compared to the selected coordinates + j iterations (for the length of the selected ship)
+                        //any conflicting coordinates throws an error stopping the user from placing a ship over another placed ship
                         for (let i = 0; i < currentPlayerGameboard.length; i++) {
                             let occupiedXCoordinate = false;
                             let occupiedYCoordinate = false;
-                            currentPlayerGameboard[i].xAxis.forEach(coordinate => {
-                                console.log(`xCoordinates ${coordinate}, selected xCoordinate ${selectedXaxis}`)
-                                if (selectedXaxis == coordinate) {
-                                    occupiedXCoordinate = true;
-                                    console.log('x already selected')
-                                }
+                            for (let j = 0; j < dataModule.selectedShip.length; j++) {
 
-                            });
-                            currentPlayerGameboard[i].yAxis.forEach(coordinate => {
-                                console.log(`yCoordinates ${coordinate}, selected yCoordinate ${selectedYaxis}`)
-                                if (selectedYaxis == coordinate) {
-                                    occupiedYCoordinate = true;
-                                    console.log('y already selected')
+
+                                currentPlayerGameboard[i].xAxis.forEach(coordinate => {
+
+                                    console.log(`xCoordinates ${coordinate}, selected xCoordinate ${selectedXaxis}`)
+                                    if (dataModule.verticalShipRotation == false) {
+                                        if (selectedXaxis + j == coordinate) {
+                                            occupiedXCoordinate = true;
+                                        }
+                                    } else {
+                                        if (selectedXaxis == coordinate) {
+                                            occupiedXCoordinate = true;
+                                        }
+                                    }
+                                });
+                                currentPlayerGameboard[i].yAxis.forEach(coordinate => {
+                                    console.log(`yCoordinates ${coordinate}, selected yCoordinate ${selectedYaxis}`)
+
+                                    if (dataModule.verticalShipRotation == true) {
+                                        selectedYaxis + j == coordinate;
+                                        occupiedYCoordinate = true;
+                                    } else {
+                                        if (selectedYaxis == coordinate) {
+                                            occupiedYCoordinate = true;
+                                        }
+                                    }
+                                });
+                                if (occupiedXCoordinate && occupiedYCoordinate == true) {
+                                    return alert('these coordinates are occupied by another ship! please choose different coordinates.');
                                 }
-                            });
-                            if (occupiedXCoordinate && occupiedYCoordinate == true) {
-                                return alert('these coordinates are occupied by another ship! please choose different coordinates.');
                             }
+                            //reset these variables every new ship object iterated on the currentPLayerGameboard
+                            occupiedXCoordinate = false;
+                            occupiedYCoordinate = false;
                         }
 
                         //this block pushes the coordinates to the ship objects coordinates array
@@ -364,7 +397,6 @@ const gameboardModule = (() => {
                                 //if the placement isnt vertical the yAxis only needs to be recorded once
                                 if (firstShipPlacemenIteration == true) {
                                     yCoordinateArr.push(selectedYaxis);
-                                    console.log(selectedYaxis + i)
                                     firstShipPlacemenIteration = false;
                                 }
                             } else if (dataModule.verticalShipRotation == true) {
@@ -391,16 +423,18 @@ const gameboardModule = (() => {
                         //this block marks the divs where the ship has been placed 
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             //keeps the shipPlacement from starting +1 from the mouseover point
-                            if (shipPlacementMarkerIteration == true) {
+                            if (shipPlacementMarkerIteration == true && dataModule.verticalShipRotation == false) {
                                 selectedXaxis -= 1;
+                                shipPlacementMarkerIteration = false;
+                            } else if (shipPlacementMarkerIteration == true && dataModule.verticalShipRotation == true) {
+                                selectedYaxis -= 1;
                                 shipPlacementMarkerIteration = false;
                             }
                             if (dataModule.verticalShipRotation == false) {
                                 let shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis += 1}"][data-yaxis="${selectedYaxis}"]`);
-
                                 shipPlacement.style.backgroundColor = 'green';
                             } else if (dataModule.verticalShipRotation == true) {
-                                shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
+                                let shipPlacement = document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis += 1}"]`);
                                 shipPlacement.style.backgroundColor = 'green';
                             }
                         }
