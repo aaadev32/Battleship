@@ -35,33 +35,43 @@ const domModule = (() => {
         return newElement;
     }
 
-    return { createElementIdClass };
+    const removeChildren = function (parent) {
+        while (parent.firstChild) {
+            parent.removeChild(parent.firstChild);
+        }
+    }
+    return { createElementIdClass, removeChildren };
 })();
 
 const playerAndPCModule = (() => {
     //this function deals hiding player screens between device handoffs and 
+
     function playerTurnHandler() {
         //if its a pvp game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true) {
             if (dataModule.player1Turn == true) {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                //alert('player 1\'s turn! no peeking.')
+                alert('player 1\'s turn. no peeking')
                 dataModule.player1Turn = false;
+                dataModule.selectedGameboard = dataModule.player2Gameboard;
                 return false;
             } else {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                //alert('player 2\'s turn! no peeking.')
+                alert('player 2\'s turn. no peeking')
                 dataModule.player1Turn = true;
+                dataModule.selectedGameboard = dataModule.player1Gameboard;
                 return true;
             }
         } else {
             if (dataModule.player1Turn == true) {
                 //alert('player 1 take a shot');
                 dataModule.player1Turn = false;
+                dataModule.selectedGameboard = dataModule.player2Gameboard;
                 return false;
             } else {
                 //alert('pc\'s turn');
                 dataModule.player1Turn = true;
+                dataModule.selectedGameboard = dataModule.player1Gameboard;
                 return true;
             }
         }
@@ -105,8 +115,8 @@ const gameLoopModule = (() => {
         document.getElementById('pvp-selection').addEventListener('click', () => {
             dataModule.pvp = true;
             document.getElementById('user-interface').style.display = 'none';
-            //call the generateBoard function to generate the board
-            gameboardModule.generateBoard();
+            //call the generateBoardShipPlacement function to generate the board
+            generateBoardShipPlacement();
             document.getElementById('gameboard-container').style.display = 'flex';
             document.getElementById('gameboard-container').style.justifyContent = 'space-around';
             //manually calling the carrier object to be default selection upon choosing the game type as well as manually making its shipPlacementTracker true to prevent problems with for in loop
@@ -117,8 +127,8 @@ const gameLoopModule = (() => {
         document.getElementById('pve-selection').addEventListener('click', () => {
             dataModule.pvp = false;
             document.getElementById('user-interface').style.display = 'none';
-            //call the generateBoard function to generate the board
-            gameboardModule.generateBoard();
+            //call the generateBoardShipPlacement function to generate the board
+            generateBoardShipPlacement();
             document.getElementById('gameboard-container').style.display = 'flex';
             document.getElementById('gameboard-container').style.justifyContent = 'space-around';
             //manually calling the carrier object to be default selection upon choosing the game type as well as manually making its shipPlacementTracker true to prevent problems with for in loop
@@ -127,87 +137,9 @@ const gameLoopModule = (() => {
         });
     }
 
-    return { userInterface };
-})();
-const gameboardModule = (() => {
-    let placeShip = function (ship, xCoordinates, yCoordinates) {
-
-        let shipPlacement = {
-            shipObj: ship,
-            xAxis: null,
-            yAxis: null
-        }
-        shipPlacement.xAxis = xCoordinates;
-        shipPlacement.yAxis = yCoordinates;
-        return shipPlacement;
-    }
-    //playerBoard should be the players board that is being attacked, playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player
-    function receiveAttack(playerAttackedCoordinates, xCoordinates, yCoordinates) {
-        let xCoordinatesTrue = false;
-        let yCoordinatesTrue = false;
-        let xHitIndex = null;
-        let yHitIndex = null;
-
-
-
-        for (let i = 0; i < dataModule.playerBoard.length; i++) {
-            console.log(dataModule.playerBoard[i].shipObj.hits);
-            //checks if xCoordinate hits
-            for (let j = 0; j < dataModule.playerBoard[i].xAxis.length; j++) {
-
-
-                if (dataModule.playerBoard[i].xAxis[j] == xCoordinates) {
-                    xHitIndex = j;
-                    xCoordinatesTrue = true
-                }
-            }
-            //checks if yCoordinate hits
-            for (let j = 0; j < dataModule.playerBoard[i].yAxis.length; j++) {
-
-                if (dataModule.playerBoard[i].yAxis[j] == yCoordinates) {
-                    yHitIndex = j;
-                    yCoordinatesTrue = true;
-                }
-            }
-            //if both coordinates hits are true, call hit function on correct ship and index of its hits array
-            if (xCoordinatesTrue && yCoordinatesTrue == true) {
-                //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
-                if (dataModule.playerBoard[i].xAxis.length > dataModule.playerBoard[i].yAxis.length) {
-                    shipModule.hit(dataModule.playerBoard[i].shipObj.hits, xHitIndex)
-                    let hitCoordinates = { x: xCoordinates, y: yCoordinates };
-                    dataModule.playerAttackedCoordinates.push(hitCoordinates)
-                } else {
-                    shipModule.hit(dataModule.playerBoard[i].shipObj.hits, yHitIndex)
-                }
-                return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
-            } else {
-                //keep track of missed coordinates for DOM display
-                let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.playerAttackedCoordinates.push(missedXYCoordinates);
-                //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
-                return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
-            }
-        }
-    }
-
-    function winCheck() {
-        let sunkShips = 0;
-        for (let i = 0; i < dataModule.playerBoard.length; i++) {
-            if (dataModule.playerBoard[i].shipObj.sunk == true) {
-                sunkShips++;
-            }
-        }
-
-        if (sunkShips == dataModule.playerBoard.length) {
-            return true; //alert('fleet sunk!')
-        } else if (sunkShips != dataModule.playerBoard.length) {
-            return false //alert('get me my brown pants')
-        }
-    }
-
     //a gameboard generator that generates a div for each coordinate with a data-xaxis and a data-yaxis value for each div
     //event listeners for the players gameboard should place objects, listeners for the players targeting board should handle attack coordinates and storage info
-    const generateBoard = function () {
+    const generateBoardShipPlacement = function () {
 
 
         let gameboardContainer = domModule.createElementIdClass('div', 'gameboard-container', '');
@@ -239,23 +171,23 @@ const gameboardModule = (() => {
         for (let i = 1; i < 11; i++) {
             for (let j = 1; j < 11; j++) {
 
-                let newDiv = document.createElement('div');
-                let newDiv2 = document.createElement('div');
+                let playerGameboardDiv = document.createElement('div');
+                let enemyBoardDiv = document.createElement('div');
 
                 //this mouseover event listener allows the DOM to display to users whether or not a ship placement is appropriate
-                newDiv.addEventListener('mouseenter', () => {
+                playerGameboardDiv.addEventListener('mouseenter', () => {
                     if (dataModule.placementPhase == false) {
                         return null;
                     }
                     if (dataModule.shipSelection == true) {
-                        let selectedXaxis = parseInt(newDiv.dataset.xaxis);
-                        let selectedYaxis = parseInt(newDiv.dataset.yaxis);
+                        let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
+                        let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                         let firstIteration = true;
                         //use a for loop to iterate a ship.length number of times from dataModule.selectedShip and adding +1 per iteration to the data attribute of the direction main axis to create a selection shadow with background color
                         //the for loop should also record the x/yaxis coordinates to track the location of the ship should it be placed in a valid location
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             if (dataModule.verticalShipRotation == false) {
-                                //keeps the shipShadow from starting +1 from the mouseover point
+                                //keeps the shipShadow from starting +1 from the mouseover point (due to 1 based indexing)
                                 if (firstIteration == true) {
                                     selectedXaxis -= 1;
                                     firstIteration = false;
@@ -268,7 +200,7 @@ const gameboardModule = (() => {
                                 }
                                 shipShadow.style.backgroundColor = 'blue';
                             } else if (dataModule.verticalShipRotation == true) {
-                                //keeps the shipShadow from starting +1 from the mouseover point
+                                //keeps the shipShadow from starting +1 from the mouseover point (due to 1 based indexing)
                                 if (firstIteration == true) {
                                     selectedYaxis -= 1;
                                     firstIteration = false;
@@ -285,9 +217,9 @@ const gameboardModule = (() => {
                     }
                 });
                 //this event listener reverses the coloring that the mouseover event listener applies when the selected ship is not placed and the mouse is moved
-                newDiv.addEventListener('mouseleave', () => {
-                    let selectedXaxis = parseInt(newDiv.dataset.xaxis);
-                    let selectedYaxis = parseInt(newDiv.dataset.yaxis);
+                playerGameboardDiv.addEventListener('mouseleave', () => {
+                    let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
+                    let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                     let firstIteration = true;
 
                     if (dataModule.placementPhase == false) {
@@ -298,7 +230,7 @@ const gameboardModule = (() => {
                         for (let i = 0; i < dataModule.selectedShip.length + 1; i++) {
                             //push the divs current colors to previousColors array in case the user decides to place a ship, the divs should keep the green placement color as opposed to turning back to the board color black
                             if (dataModule.verticalShipRotation == false) {
-                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed
+                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed (due to 1 based indexing)
                                 if (firstIteration == true) {
                                     selectedXaxis -= 1;
                                     firstIteration = false;
@@ -311,7 +243,7 @@ const gameboardModule = (() => {
                                 }
                                 shipShadow.style.backgroundColor = 'black';
                             } else if (dataModule.verticalShipRotation == true) {
-                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed
+                                //keeps the shipShadow from leaving 1 block at the furthest point along the main axis when a ship has been placed (due to 1 based indexing)
                                 if (firstIteration == true) {
                                     selectedYaxis -= 1;
                                     firstIteration = false;
@@ -329,9 +261,9 @@ const gameboardModule = (() => {
                 });
 
                 //this click event listener should be responsible for placing ships in the DOM and recording their coordinates to the respective gameboard object
-                newDiv.addEventListener('click', () => {
-                    let selectedXaxis = parseInt(newDiv.dataset.xaxis);
-                    let selectedYaxis = parseInt(newDiv.dataset.yaxis);
+                playerGameboardDiv.addEventListener('click', () => {
+                    let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
+                    let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
                     let shipPlacementMarkerIteration = true;
                     let firstShipPlacemenIteration = true;
@@ -419,7 +351,7 @@ const gameboardModule = (() => {
                             }
                             //places the ship once all coordinates of the ship length have been accounted for
                             if (i == dataModule.selectedShip.length - 1) {
-                                let newShipPlacement = placeShip(dataModule.selectedShip, xCoordinateArr, yCoordinateArr)
+                                let newShipPlacement = gameboardModule.placeShip(dataModule.selectedShip, xCoordinateArr, yCoordinateArr)
                                 if (dataModule.player1Turn == true) {
                                     dataModule.player1Gameboard.push(newShipPlacement);
                                 } else {
@@ -455,7 +387,7 @@ const gameboardModule = (() => {
                             }
                             if (dataModule.player1Turn == false) {
                                 dataModule.placementPhase = false;
-                                return alert('game start!');
+                                return alert('game start!'), gameLoopModule.generateBoardNextTurn();
                             }
                             alert('player 2\'s turn')
                             dataModule.player1Turn = false;
@@ -472,27 +404,152 @@ const gameboardModule = (() => {
                         alert('placement phase over')
                     }
                 });
-                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes 
-                newDiv2.addEventListener('click', () => {
-                    let selectedXaxis = parseInt(newDiv2.dataset.xaxis);
-                    let selectedYaxis = parseInt(newDiv2.dataset.yaxis);
 
-                    //keeps from attacking opponent board during ship placement phase
-                    if (dataModule.shipSelection == false) {
-                        gameboardModule.receiveAttack(newDiv2.dataset.xaxis, newDiv2.dataset.yaxis)
-                    }
-                });
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
-                newDiv.dataset.xaxis = `${j}`;
-                newDiv.dataset.yaxis = `${i}`;
-                newDiv.className = 'gameboard-cell';
-                newDiv2.className = 'gameboard-cell';
-                document.getElementById('gameboard').appendChild(newDiv);
-                document.getElementById('opponent-gameboard').appendChild(newDiv2);
+                playerGameboardDiv.dataset.xaxis = `${j}`;
+                playerGameboardDiv.dataset.yaxis = `${i}`;
+                playerGameboardDiv.className = 'gameboard-cell';
+                enemyBoardDiv.className = 'gameboard-cell';
+                document.getElementById('gameboard').appendChild(playerGameboardDiv);
+                document.getElementById('opponent-gameboard').appendChild(enemyBoardDiv);
             }
         }
     }
-    return { generateBoard, placeShip, receiveAttack, winCheck }
+
+    //on each turn after ship placement function should take the playerNGameboard object, draw the associated x/yAxis coordinates for each ship to the player gameboard, as well as take the playerNAttackedCoordinates and draw it to the "enemy territory" gameboard.
+    function generateBoardNextTurn() {
+
+        playerAndPCModule.playerTurnHandler();
+        domModule.removeChildren(document.getElementById('gameboard'));
+        domModule.removeChildren(document.getElementById('opponent-gameboard'));
+
+        for (let i = 1; i < 11; i++) {
+            for (let j = 1; j < 11; j++) {
+
+                let playerGameboardDiv = document.createElement('div');
+                let enemyBoardDiv = document.createElement('div');
+
+                playerGameboardDiv.dataset.xaxis = `${j}`;
+                playerGameboardDiv.dataset.yaxis = `${i}`;
+                playerGameboardDiv.className = 'gameboard-cell';
+                enemyBoardDiv.className = 'gameboard-cell';
+
+                document.getElementById('gameboard').appendChild(playerGameboardDiv);
+                document.getElementById('opponent-gameboard').appendChild(enemyBoardDiv);
+
+                //check for player turn then iterate through associated players gameboard object to get the ship coordinates and draw them to DOM
+                //check for players attacked coordinates board and iterate through it and draw them to the DOM
+
+                //iterates through playerGameboard objects for ship placement coordinates marking the divs the associated data attributes
+                for (let k = 0; k < dataModule.selectedGameboard.length; k++) {
+                    let xCoordinate = null;
+                    let yCoordinate = null;
+                    dataModule.selectedGameboard[k].xAxis.forEach(coordinate => {
+                        xCoordinate = coordinate
+                        dataModule.selectedGameboard[k].yAxis.forEach(coordinate => {
+                            yCoordinate = coordinate
+                            if (xCoordinate == j && yCoordinate == i) {
+                                document.querySelector(`[data-xaxis="${xCoordinate}"][data-yaxis="${yCoordinate}"]`).style.backgroundColor = 'green';
+                            }
+                        });
+                    });
+                }
+
+                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes 
+                enemyBoardDiv.addEventListener('click', () => {
+                    let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
+                    let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
+                    //test alert
+                    alert('boom!');
+
+                    //call the receive attack function
+
+                });
+            }
+        }
+    }
+
+
+    return { userInterface, generateBoardShipPlacement, generateBoardNextTurn };
+})();
+const gameboardModule = (() => {
+    let placeShip = function (ship, xCoordinates, yCoordinates) {
+
+        let shipPlacement = {
+            shipObj: ship,
+            xAxis: null,
+            yAxis: null
+        }
+        shipPlacement.xAxis = xCoordinates;
+        shipPlacement.yAxis = yCoordinates;
+        return shipPlacement;
+    }
+    //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, selectedGameBoard should be set properly prior to calling this function
+    function receiveAttack(xCoordinates, yCoordinates) {
+        let xCoordinatesTrue = false;
+        let yCoordinatesTrue = false;
+        let xHitIndex = null;
+        let yHitIndex = null;
+
+
+
+        for (let i = 0; i < dataModule.selectedGameboard.length; i++) {
+            console.log(dataModule.selectedGameboard[i].shipObj.hits);
+            //checks if xCoordinate hits
+            for (let j = 0; j < dataModule.selectedGameboard[i].xAxis.length; j++) {
+
+
+                if (dataModule.selectedGameboard[i].xAxis[j] == xCoordinates) {
+                    xHitIndex = j;
+                    xCoordinatesTrue = true
+                }
+            }
+            //checks if yCoordinate hits
+            for (let j = 0; j < dataModule.selectedGameboard[i].yAxis.length; j++) {
+
+                if (dataModule.selectedGameboard[i].yAxis[j] == yCoordinates) {
+                    yHitIndex = j;
+                    yCoordinatesTrue = true;
+                }
+            }
+            //if both coordinates hits are true, call hit function on correct ship and index of its hits array
+            if (xCoordinatesTrue && yCoordinatesTrue == true) {
+                //when scanning the nAxis arrays for equality comparison to the x/yCoordinate parameters use the the nAxis truthy index value of the longest nAxis array as the index parameter in the hit() function to insure the correct hit index is marked 
+                if (dataModule.selectedGameboard[i].xAxis.length > dataModule.selectedGameboard[i].yAxis.length) {
+                    shipModule.hit(dataModule.selectedGameboard[i].shipObj.hits, xHitIndex)
+                    let hitCoordinates = { x: xCoordinates, y: yCoordinates };
+                    dataModule.playerAttackedCoordinates.push(hitCoordinates)
+                } else {
+                    shipModule.hit(dataModule.selectedGameboard[i].shipObj.hits, yHitIndex)
+                }
+                return true;//alert(`attack ${xCoordinates}, ${yCoordinates} hits!`)
+            } else {
+                //keep track of missed coordinates for DOM display
+                let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
+                dataModule.playerAttackedCoordinates.push(missedXYCoordinates);
+                //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
+                return false;//alert(`attack ${xCoordinates}, ${yCoordinates} misses!`)
+            }
+        }
+    }
+
+    function winCheck() {
+        let sunkShips = 0;
+        for (let i = 0; i < dataModule.selectedGameboard.length; i++) {
+            if (dataModule.selectedGameboard[i].shipObj.sunk == true) {
+                sunkShips++;
+            }
+        }
+
+        if (sunkShips == dataModule.selectedGameboard.length) {
+            return true; //alert('fleet sunk!')
+        } else if (sunkShips != dataModule.selectedGameboard.length) {
+            return false //alert('get me my brown pants')
+        }
+    }
+
+
+    return { placeShip, receiveAttack, winCheck }
 })();
 
 const shipModule = (() => {
