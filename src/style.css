@@ -28,26 +28,59 @@
     border-radius: 5px;
 }
 
-.gameboard-cell {
+.gameboard-0-cell {
     height: 25px;
     width: 25px;
     background-color: black;
     border: 1px solid black;
 }
 
+.gameboard-1-cell {
+    height: 25px;
+    width: 25px;
+    background-color: black;
+    border: 1px solid black;
+}
+
+.opponent-gameboard-0-cell {
+    height: 25px;
+    width: 25px;
+    background-color: black;
+    border: 1px solid black;
+}
+
+.opponent-gameboard-1-cell {
+    height: 25px;
+    width: 25px;
+    background-color: black;
+    border: 1px solid black;
+}
+
+
 #gameboard-header-container {
     display: flex;
     justify-content: space-around;
 }
 
-
-#gameboard {
+#gameboard-0 {
     display: grid;
     grid-template-columns: repeat(10, 30px);
     grid-template-rows: repeat(10, 30px);
 }
 
-#opponent-gameboard {
+#gameboard-1 {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+}
+
+#opponent-gameboard-0 {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+}
+
+#opponent-gameboard-1 {
     display: grid;
     grid-template-columns: repeat(10, 30px);
     grid-template-rows: repeat(10, 30px);
