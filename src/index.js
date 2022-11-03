@@ -48,27 +48,48 @@ const playerAndPCModule = (() => {
     //this function deals hiding player screens between device handoffs and 
 
     function playerTurnHandler() {
+        document.getElementById('gameboard-container-0').style.display = 'none';
+        document.getElementById('gameboard-container-1').style.display = 'none';
+
         //if its a pvp game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true || dataModule.player1Turn == false && dataModule.pvp == true) {
             if (dataModule.player1Turn == false) {
-                //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                alert('player 1\'s turn. no peeking')
-                dataModule.player1Turn = true;
-                dataModule.selectedGameboard = dataModule.player1Gameboard;
-                dataModule.selectedEnemyGameboard = dataModule.player1AttackedCoordinates
+                //the setTimeout function are used since it seems an alert statement actually gets fired before anything else in this block then immediatley firing the code after the alerts code line once the alert is closed, the setTimeout function fixes this by 
+                //only setting the gameboard containers to flex after the window has been closed
+                setTimeout(() => {
+                    alert('player 1\'s turn. no peeking');
+
+                }, 150);
+                setTimeout(() => {
+                    dataModule.player1Turn = true;
+                    dataModule.selectedGameboard = dataModule.player1Gameboard;
+                    dataModule.selectedEnemyGameboard = dataModule.player1AttackedCoordinates
+                    //turn off the 2nd player gameboard display and turn on the 1st players
+                    document.getElementById('gameboard-container-0').style.display = 'flex';
+
+                }, 150);
+
                 return false;
             } else {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
-                alert('player 2\'s turn. no peeking')
-                dataModule.player1Turn = false;
-                dataModule.selectedGameboard = dataModule.player2Gameboard;
-                dataModule.selectedEnemyGameboard = dataModule.player2AttackedCoordinates
+                setTimeout(() => {
+                    alert('player 2\'s turn. no peeking');
+                }, 150);
+
+                setTimeout(() => {
+                    dataModule.player1Turn = false;
+                    dataModule.selectedGameboard = dataModule.player2Gameboard;
+                    dataModule.selectedEnemyGameboard = dataModule.player2AttackedCoordinates
+                    //turn off the 1st player gameboard display and turn on the 2nd players
+                    document.getElementById('gameboard-container-1').style.display = 'flex';
+                }, 150);
+
 
                 return true;
             }
         } else {
             if (dataModule.player1Turn == true) {
-                //alert('player 1 take a shot');
+                alert('players turn');
                 dataModule.player1Turn = false;
                 dataModule.selectedGameboard = dataModule.player2Gameboard;
                 return false;
@@ -79,16 +100,6 @@ const playerAndPCModule = (() => {
                 return true;
             }
         }
-    }
-    //deprecated
-    function getRandomChar() {
-        let result = '';
-        let characters = 'abcdefghij';
-        for (let i = 0; i < 1; i++) {
-            result = characters.charAt(Math.floor(Math.random() *
-                characters.length));
-        }
-        return result;
     }
     //create an ai function that will determine the computer players attacks
     function pcPlay() {
@@ -108,7 +119,7 @@ const playerAndPCModule = (() => {
         //if the random coordinate pairs do not match any in the usedCoordinates array they should be passed through the receive attack function
         gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
     }
-    return { playerTurnHandler, getRandomChar, pcPlay }
+    return { playerTurnHandler, pcPlay }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
@@ -183,11 +194,9 @@ const gameLoopModule = (() => {
             numberOfGameboards++
             document.getElementById('gameboard-container-0').style.display = 'none';
         }
-
         let gameboardContainer = domModule.createElementIdClass('div', `gameboard-container-${numberOfGameboards}`, '');
         let gameBoard = domModule.createElementIdClass('div', `gameboard-${numberOfGameboards}`, '');
         let opponentBoard = domModule.createElementIdClass('div', `opponent-gameboard-${numberOfGameboards}`, '');
-
 
         document.getElementById('content').appendChild(gameboardContainer);
         document.getElementById(`gameboard-container-${numberOfGameboards}`).appendChild(gameBoard);
@@ -419,9 +428,9 @@ const gameLoopModule = (() => {
                             }
                             if (dataModule.player1Turn == false) {
                                 dataModule.placementPhase = false;
-                                return alert('game start!'), gameLoopModule.playerTurnHandler();
+                                return alert('game start!'), playerAndPCModule.playerTurnHandler();
                             }
-                            alert('player 2\'s turn')
+                            alert('player 2\'s turn to place ships')
                             dataModule.player1Turn = false;
                             generateBoards();
                         }
@@ -433,9 +442,17 @@ const gameLoopModule = (() => {
                                 return dataModule.selectedShip = shipObj[property];
                             }
                         }
-                    } else {
-                        alert('placement phase over')
                     }
+                });
+
+                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes
+                enemyBoardDiv.addEventListener('click', () => {
+                    let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
+                    let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
+                    gameboardModule.receiveAttack(selectedXaxis, selectedYaxis);
+
+                    //figure out how to record a miss or a hit to the gameboard of each player, maybe use data attributes such as "hit" or "miss" so that when present change a div to a certain color
+
                 });
 
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
@@ -452,63 +469,7 @@ const gameLoopModule = (() => {
         }
     }
 
-    //on each turn after ship placement function should take the playerNGameboard object, draw the associated x/yAxis coordinates for each ship to the player gameboard, as well as take the playerNAttackedCoordinates and draw it to the "enemy territory" gameboard.
-    function generateBoardsNextTurn() {
-
-        playerAndPCModule.playerTurnHandler();
-        domModule.removeChildren(document.getElementById('gameboard'));
-        domModule.removeChildren(document.getElementById('opponent-gameboard'));
-
-        for (let i = 1; i < 11; i++) {
-            for (let j = 1; j < 11; j++) {
-
-                let playerGameboardDiv = document.createElement('div');
-                let enemyBoardDiv = document.createElement('div');
-
-                playerGameboardDiv.dataset.xaxis = `${j}`;
-                playerGameboardDiv.dataset.yaxis = `${i}`;
-                playerGameboardDiv.className = 'gameboard-cell';
-
-                enemyBoardDiv.dataset.xaxis = `${j}`;
-                enemyBoardDiv.dataset.yaxis = `${i}`;
-                enemyBoardDiv.className = 'gameboard-cell';
-
-                document.getElementById('gameboard').appendChild(playerGameboardDiv);
-                document.getElementById('opponent-gameboard').appendChild(enemyBoardDiv);
-
-                //check for player turn then iterate through associated players gameboard object to get the ship coordinates and draw them to DOM
-                //check for players attacked coordinates board and iterate through it and draw them to the DOM
-
-                //iterates through playerGameboard objects for ship placement coordinates marking the divs the associated data attributes
-                for (let k = 0; k < dataModule.selectedGameboard.length; k++) {
-                    let xCoordinate = null;
-                    let yCoordinate = null;
-                    dataModule.selectedGameboard[k].xAxis.forEach(coordinate => {
-                        xCoordinate = coordinate
-                        dataModule.selectedGameboard[k].yAxis.forEach(coordinate => {
-                            yCoordinate = coordinate
-                            if (xCoordinate == j && yCoordinate == i) {
-                                document.querySelector(`[data-xaxis="${xCoordinate}"][data-yaxis="${yCoordinate}"]`).style.backgroundColor = 'green';
-                            }
-                        });
-                    });
-                }
-
-                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes
-                enemyBoardDiv.addEventListener('click', () => {
-                    let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
-                    let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
-                    gameboardModule.receiveAttack(selectedXaxis, selectedYaxis);
-
-                    //figure out how to record a miss or a hit to the gameboard of each player, maybe use data attributes such as "hit" or "miss" so that when present change a div to a certain color
-
-                });
-            }
-        }
-    }
-
-
-    return { userInterface, generateBoards, generateBoardsNextTurn };
+    return { userInterface, generateBoards };
 })();
 const gameboardModule = (() => {
     let placeShip = function (ship, xCoordinates, yCoordinates) {
@@ -529,7 +490,7 @@ const gameboardModule = (() => {
         let xHitIndex = null;
         let yHitIndex = null;
 
-
+        console.log(dataModule.selectedEnemyGameboard);
 
         for (let i = 0; i < dataModule.selectedGameboard.length; i++) {
             console.log(dataModule.selectedGameboard[i].shipObj.hits);
@@ -554,15 +515,16 @@ const gameboardModule = (() => {
                 dataModule.selectedEnemyGameboard[i].push(hitXYCoordinates);
                 dataModule.selectedGameboard[i].shipObj.hits++
 
-                return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`);
+                return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`), playerAndPCModule.playerTurnHandler();
             } else {
                 //keep track of missed coordinates for DOM display
                 let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
                 dataModule.selectedEnemyGameboard.push(missedXYCoordinates);
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
-                return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`);
+                return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`), playerAndPCModule.playerTurnHandler();
             }
         }
+
     }
 
     function winCheck() {
@@ -665,7 +627,6 @@ let gameBoardTestShip = gameboardModule.gameboard(shipModule.ship().battleship, 
 dataModule.fleetStatus = [gameBoardTestShip];
 gameboardModule.receiveAttack(1, 0);
 gameboardModule.receiveAttack(3, 4);
-console.log(playerAndPCModule.getRandomChar())
 console.log(dataModule.usedCoordinates[0], dataModule.usedCoordinates[1])
 const newBool = playerAndPCModule.player()
 module.exports = { dataModule, playerAndPCModule, domModule, gameLoopModule, gameboardModule, shipModule, sunkShip, newBool }; */
