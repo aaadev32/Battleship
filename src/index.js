@@ -13,10 +13,12 @@ const dataModule = (() => {
     let shipSelection = true;
     //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
     let selectedShip = {};
-    let selectedGameboard = null;
-    let selectedEnemyGameboard = null
+    let currentPlayerGameboard = null;
+    let currentEnemyGameboard = null
     let placementPhase = true;
     let verticalShipRotation = false;
+    //used in receiveAttack function to set divs marking hit or misses on gameboards, i used this over returning a bool in the receiveAttack because checking the bool also requires running the function causing the function to run twice
+    let hitBool = null;
     //this object keeps track of the ships that have been placed during a players turn (resets back to false at end of turn)
     let shipPlacementTracker = {
         carrier: false,
@@ -26,7 +28,7 @@ const dataModule = (() => {
         patrolBoat: false
     }
 
-    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, selectedGameboard, selectedEnemyGameboard, placementPhase, verticalShipRotation, shipPlacementTracker };
+    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, shipPlacementTracker };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -51,6 +53,9 @@ const playerAndPCModule = (() => {
         document.getElementById('gameboard-container-0').style.display = 'none';
         document.getElementById('gameboard-container-1').style.display = 'none';
 
+
+
+
         //if its a pvp game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true || dataModule.player1Turn == false && dataModule.pvp == true) {
             if (dataModule.player1Turn == false) {
@@ -62,8 +67,10 @@ const playerAndPCModule = (() => {
                 }, 150);
                 setTimeout(() => {
                     dataModule.player1Turn = true;
-                    dataModule.selectedGameboard = dataModule.player1Gameboard;
-                    dataModule.selectedEnemyGameboard = dataModule.player1AttackedCoordinates
+                    let currentPlayerGameboardCopy = { ...dataModule.player1Gameboard }
+                    let enemyPlayerGameboardCopy = { ...dataModule.player2Gameboard }
+                    dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
+                    dataModule.currentEnemyGameboard = dataModule.player2Gameboard;
                     //turn off the 2nd player gameboard display and turn on the 1st players
                     document.getElementById('gameboard-container-0').style.display = 'flex';
 
@@ -78,8 +85,10 @@ const playerAndPCModule = (() => {
 
                 setTimeout(() => {
                     dataModule.player1Turn = false;
-                    dataModule.selectedGameboard = dataModule.player2Gameboard;
-                    dataModule.selectedEnemyGameboard = dataModule.player2AttackedCoordinates
+                    let currentPlayerGameboardCopy = { ...dataModule.player2Gameboard }
+                    let enemyPlayerGameboardCopy = { ...dataModule.player1Gameboard }
+                    dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
+                    dataModule.currentEnemyGameboard = dataModule.player1Gameboard;
                     //turn off the 1st player gameboard display and turn on the 2nd players
                     document.getElementById('gameboard-container-1').style.display = 'flex';
                 }, 150);
@@ -91,12 +100,12 @@ const playerAndPCModule = (() => {
             if (dataModule.player1Turn == true) {
                 alert('players turn');
                 dataModule.player1Turn = false;
-                dataModule.selectedGameboard = dataModule.player2Gameboard;
+                dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
                 return false;
             } else {
                 //alert('pc\'s turn');
                 dataModule.player1Turn = true;
-                dataModule.selectedGameboard = dataModule.player1Gameboard;
+                dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
                 return true;
             }
         }
@@ -302,7 +311,7 @@ const gameLoopModule = (() => {
 
                 //this click event listener should be responsible for placing ships in the DOM and recording their coordinates to the respective gameboard object
                 playerGameboardDiv.addEventListener('click', () => {
-                    console.log(dataModule.selectedGameboard)
+                    console.log(dataModule.currentPlayerGameboard)
                     let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
@@ -322,22 +331,22 @@ const gameLoopModule = (() => {
                         } else if (selectedYaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == true) {
                             return alert('invalid placement on the Y Axis!')
                         }
-                        //sets up the player gameboard to be iterated in the next for loop block
+                        //sets up the player gameboard on each placement turn to be iterated in the next for loop block, player turns after ship placement are handled by playerTurnHandler()
                         if (dataModule.player1Turn == true) {
-                            dataModule.selectedGameboard = dataModule.player1Gameboard;
+                            dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
                         } else {
-                            dataModule.selectedGameboard = dataModule.player2Gameboard;
+                            dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
                         }
                         //this checks for ships already placed on the selected coordinates on the current player gameboard.
                         //each ship objects xAxis and yAxis property keys are iterated and compared to the selected coordinates + j iterations (for the length of the selected ship)
                         //any conflicting coordinates throws an error stopping the user from placing a ship over another placed ship
-                        for (let i = 0; i < dataModule.selectedGameboard.length; i++) {
+                        for (let i = 0; i < dataModule.currentPlayerGameboard.length; i++) {
                             let occupiedXCoordinate = false;
                             let occupiedYCoordinate = false;
                             for (let j = 0; j < dataModule.selectedShip.length; j++) {
 
 
-                                dataModule.selectedGameboard[i].xAxis.forEach(coordinate => {
+                                dataModule.currentPlayerGameboard[i].xAxis.forEach(coordinate => {
 
                                     console.log(`xCoordinates ${coordinate}, selected xCoordinate ${selectedXaxis}`)
                                     if (dataModule.verticalShipRotation == false) {
@@ -350,7 +359,7 @@ const gameLoopModule = (() => {
                                         }
                                     }
                                 });
-                                dataModule.selectedGameboard[i].yAxis.forEach(coordinate => {
+                                dataModule.currentPlayerGameboard[i].yAxis.forEach(coordinate => {
                                     console.log(`yCoordinates ${coordinate}, selected yCoordinate ${selectedYaxis}`)
 
                                     if (dataModule.verticalShipRotation == true) {
@@ -400,7 +409,8 @@ const gameLoopModule = (() => {
                                 }
                             }
                         }
-                        console.log(dataModule.selectedGameboard)
+                        console.log(dataModule.currentPlayerGameboard);
+                        console.log(dataModule.currentEnemyGameboard);
                         //this block marks the divs where the ship has been placed 
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             //keeps the shipPlacement from starting +1 from the mouseover point
@@ -432,6 +442,7 @@ const gameLoopModule = (() => {
                             }
                             alert('player 2\'s turn to place ships')
                             dataModule.player1Turn = false;
+                            //sets up player 2's board
                             generateBoards();
                         }
                         //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
@@ -450,9 +461,13 @@ const gameLoopModule = (() => {
                     let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
                     gameboardModule.receiveAttack(selectedXaxis, selectedYaxis);
+                    if (dataModule.hitBool == true) {
+                        enemyBoardDiv.style.backgroundColor = 'red';
+                    } else {
+                        enemyBoardDiv.style.backgroundColor = 'grey';
 
-                    //figure out how to record a miss or a hit to the gameboard of each player, maybe use data attributes such as "hit" or "miss" so that when present change a div to a certain color
-
+                    }
+                    console.log(dataModule.currentEnemyGameboard);
                 });
 
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
@@ -483,45 +498,54 @@ const gameboardModule = (() => {
         shipPlacement.yAxis = yCoordinates;
         return shipPlacement;
     }
-    //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, selectedGameBoard should be set properly prior to calling this function
+    //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
     function receiveAttack(xCoordinates, yCoordinates) {
         let xCoordinatesTrue = false;
         let yCoordinatesTrue = false;
-        let xHitIndex = null;
-        let yHitIndex = null;
+        //write an attackedCoordinates checker so the player cannot call on the same coordinates more than once
 
-        console.log(dataModule.selectedEnemyGameboard);
-
-        for (let i = 0; i < dataModule.selectedGameboard.length; i++) {
-            console.log(dataModule.selectedGameboard[i].shipObj.hits);
+        for (let i = 0; i < dataModule.currentEnemyGameboard.length; i++) {
+            console.log(dataModule.currentEnemyGameboard[i].xAxis, dataModule.currentEnemyGameboard[i].yAxis)
             //checks if xCoordinate hits
-            for (let j = 0; j < dataModule.selectedGameboard[i].xAxis.length; j++) {
-                if (dataModule.selectedGameboard[i].xAxis[j] == xCoordinates) {
-                    xHitIndex = j;
+            for (let j = 0; j < dataModule.currentEnemyGameboard[i].xAxis.length; j++) {
+                if (dataModule.currentEnemyGameboard[i].xAxis[j] == xCoordinates) {
                     xCoordinatesTrue = true
                 }
             }
             //checks if yCoordinate hits
-            for (let j = 0; j < dataModule.selectedGameboard[i].yAxis.length; j++) {
-
-                if (dataModule.selectedGameboard[i].yAxis[j] == yCoordinates) {
-                    yHitIndex = j;
+            for (let j = 0; j < dataModule.currentEnemyGameboard[i].yAxis.length; j++) {
+                if (dataModule.currentEnemyGameboard[i].yAxis[j] == yCoordinates) {
                     yCoordinatesTrue = true;
                 }
             }
             //if both coordinates hits are true, call hit function on correct ship and index of its hits array
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
                 let hitXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.selectedEnemyGameboard[i].push(hitXYCoordinates);
-                dataModule.selectedGameboard[i].shipObj.hits++
+                if (dataModule.player1Turn == true) {
+                    dataModule.hitBool = true;
+                    dataModule.player1AttackedCoordinates.push(hitXYCoordinates);
+                    dataModule.player2Gameboard[i].shipObj.hits++;
 
-                return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`), playerAndPCModule.playerTurnHandler();
+                } else {
+                    dataModule.hitBool = true;
+                    dataModule.player2AttackedCoordinates.push(hitXYCoordinates);
+                    dataModule.player2Gameboard[i].shipObj.hits++;
+
+                }
+
+                return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`);
             } else {
                 //keep track of missed coordinates for DOM display
                 let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                dataModule.selectedEnemyGameboard.push(missedXYCoordinates);
+                if (dataModule.player1Turn == true) {
+                    dataModule.hitBool = false;
+                    dataModule.player1AttackedCoordinates.push(missedXYCoordinates)
+                } else {
+                    dataModule.hitBool = false;
+                    dataModule.player2AttackedCoordinates.push(missedXYCoordinates)
+                }
                 //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
-                return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`), playerAndPCModule.playerTurnHandler();
+                return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`);
             }
         }
 
