@@ -52,10 +52,6 @@ const playerAndPCModule = (() => {
     function playerTurnHandler() {
         document.getElementById('gameboard-container-0').style.display = 'none';
         document.getElementById('gameboard-container-1').style.display = 'none';
-
-
-
-
         //if its a pvp game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true || dataModule.player1Turn == false && dataModule.pvp == true) {
             if (dataModule.player1Turn == false) {
@@ -199,7 +195,6 @@ const gameLoopModule = (() => {
         //used to set class and id names to distinguish between 1st and 2nd player boards
         let numberOfGameboards = 0;
         if (document.getElementById('gameboard-container-0')) {
-            console.log('tasdf')
             numberOfGameboards++
             document.getElementById('gameboard-container-0').style.display = 'none';
         }
@@ -409,8 +404,7 @@ const gameLoopModule = (() => {
                                 }
                             }
                         }
-                        console.log(dataModule.currentPlayerGameboard);
-                        console.log(dataModule.currentEnemyGameboard);
+
                         //this block marks the divs where the ship has been placed 
                         for (let i = 0; i < dataModule.selectedShip.length; i++) {
                             //keeps the shipPlacement from starting +1 from the mouseover point
@@ -458,16 +452,19 @@ const gameLoopModule = (() => {
 
                 //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes
                 enemyBoardDiv.addEventListener('click', () => {
+                    if (enemyBoardDiv.style.backgroundColor == 'grey' || enemyBoardDiv.style.backgroundColor == 'red') {
+                        return alert('choose another coordinate');
+                    }
                     let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
                     gameboardModule.receiveAttack(selectedXaxis, selectedYaxis);
+                    console.log(dataModule.hitBool)
                     if (dataModule.hitBool == true) {
                         enemyBoardDiv.style.backgroundColor = 'red';
                     } else {
                         enemyBoardDiv.style.backgroundColor = 'grey';
-
                     }
-                    console.log(dataModule.currentEnemyGameboard);
+                    playerAndPCModule.playerTurnHandler();
                 });
 
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
@@ -500,12 +497,13 @@ const gameboardModule = (() => {
     }
     //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
     function receiveAttack(xCoordinates, yCoordinates) {
-        let xCoordinatesTrue = false;
-        let yCoordinatesTrue = false;
+        let xCoordinatesTrue = null;
+        let yCoordinatesTrue = null;
         //write an attackedCoordinates checker so the player cannot call on the same coordinates more than once
-
         for (let i = 0; i < dataModule.currentEnemyGameboard.length; i++) {
-            console.log(dataModule.currentEnemyGameboard[i].xAxis, dataModule.currentEnemyGameboard[i].yAxis)
+            xCoordinatesTrue = null;
+            yCoordinatesTrue = null;
+            //console.log(dataModule.currentEnemyGameboard[i].xAxis, dataModule.currentEnemyGameboard[i].yAxis)
             //checks if xCoordinate hits
             for (let j = 0; j < dataModule.currentEnemyGameboard[i].xAxis.length; j++) {
                 if (dataModule.currentEnemyGameboard[i].xAxis[j] == xCoordinates) {
@@ -521,35 +519,38 @@ const gameboardModule = (() => {
             //if both coordinates hits are true, call hit function on correct ship and index of its hits array
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
                 let hitXYCoordinates = { x: xCoordinates, y: yCoordinates };
+                dataModule.hitBool = true;
                 if (dataModule.player1Turn == true) {
-                    dataModule.hitBool = true;
                     dataModule.player1AttackedCoordinates.push(hitXYCoordinates);
                     dataModule.player2Gameboard[i].shipObj.hits++;
 
                 } else {
-                    dataModule.hitBool = true;
                     dataModule.player2AttackedCoordinates.push(hitXYCoordinates);
-                    dataModule.player2Gameboard[i].shipObj.hits++;
-
+                    dataModule.player1Gameboard[i].shipObj.hits++;
                 }
+                console.log('test1')
 
                 return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`);
-            } else {
-                //keep track of missed coordinates for DOM display
-                let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                if (dataModule.player1Turn == true) {
+            }
+            //only throw the missed attack after checking every ships coordinates
+            if (i == dataModule.currentEnemyGameboard.length - 1) {
+                if (xCoordinatesTrue || yCoordinatesTrue != true) {
+                    console.log('test12')
+
+                    let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
                     dataModule.hitBool = false;
-                    dataModule.player1AttackedCoordinates.push(missedXYCoordinates)
-                } else {
-                    dataModule.hitBool = false;
-                    dataModule.player2AttackedCoordinates.push(missedXYCoordinates)
+                    if (dataModule.player1Turn == true) {
+                        dataModule.player1AttackedCoordinates.push(missedXYCoordinates)
+
+                    } else {
+                        dataModule.player2AttackedCoordinates.push(missedXYCoordinates)
+                    }
+                    return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`);
                 }
-                //note for when DOM is added, add code here that marks the correct DOM element for an attack with x/yCoordinates that miss
-                return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`);
             }
         }
-
     }
+
 
     function winCheck() {
         let player1SunkShips = 0;
