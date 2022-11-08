@@ -5,6 +5,7 @@ const dataModule = (() => {
     //the gameboard arrays will store the ship objects, the attacked coordinates keeps track of what plays each player has already made.
     let player1Gameboard = [];
     let player2Gameboard = [];
+    //these attacked coordinates never get utilized so far but may need them when coding the AI
     let player1AttackedCoordinates = [];
     let player2AttackedCoordinates = [];
     let pvp = false;
@@ -19,6 +20,7 @@ const dataModule = (() => {
     let verticalShipRotation = false;
     //used in receiveAttack function to set divs marking hit or misses on gameboards, i used this over returning a bool in the receiveAttack because checking the bool also requires running the function causing the function to run twice
     let hitBool = null;
+    let opponentBoardNumber;
     //this object keeps track of the ships that have been placed during a players turn (resets back to false at end of turn)
     let shipPlacementTracker = {
         carrier: false,
@@ -28,7 +30,9 @@ const dataModule = (() => {
         patrolBoat: false
     }
 
-    return { player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, shipPlacementTracker };
+    return {
+        player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, shipPlacementTracker
+    };
 })();
 const domModule = (() => {
     const createElementIdClass = function (element, id, classN) {
@@ -63,14 +67,12 @@ const playerAndPCModule = (() => {
                 }, 150);
                 setTimeout(() => {
                     dataModule.player1Turn = true;
-                    let currentPlayerGameboardCopy = { ...dataModule.player1Gameboard }
-                    let enemyPlayerGameboardCopy = { ...dataModule.player2Gameboard }
                     dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
                     dataModule.currentEnemyGameboard = dataModule.player2Gameboard;
                     //turn off the 2nd player gameboard display and turn on the 1st players
                     document.getElementById('gameboard-container-0').style.display = 'flex';
 
-                }, 150);
+                }, 180);
 
                 return false;
             } else {
@@ -81,13 +83,11 @@ const playerAndPCModule = (() => {
 
                 setTimeout(() => {
                     dataModule.player1Turn = false;
-                    let currentPlayerGameboardCopy = { ...dataModule.player2Gameboard }
-                    let enemyPlayerGameboardCopy = { ...dataModule.player1Gameboard }
                     dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
                     dataModule.currentEnemyGameboard = dataModule.player1Gameboard;
                     //turn off the 1st player gameboard display and turn on the 2nd players
                     document.getElementById('gameboard-container-1').style.display = 'flex';
-                }, 150);
+                }, 180);
 
 
                 return true;
@@ -450,19 +450,29 @@ const gameLoopModule = (() => {
                     }
                 });
 
-                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes
+                //this click event listener should trigger the receiveAttack function with the data-x/yaxis attributes as well as mark both players gameboards where each player has missed or hit
                 enemyBoardDiv.addEventListener('click', () => {
+                    //this is to set up for the query selector a few lines below.
+                    if (dataModule.player1Turn == true) {
+                        dataModule.opponentBoardNumber = 1;
+                    } else {
+                        dataModule.opponentBoardNumber = 0;
+                    }
                     if (enemyBoardDiv.style.backgroundColor == 'grey' || enemyBoardDiv.style.backgroundColor == 'red') {
                         return alert('choose another coordinate');
                     }
                     let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
-                    gameboardModule.receiveAttack(selectedXaxis, selectedYaxis);
-                    console.log(dataModule.hitBool)
-                    if (dataModule.hitBool == true) {
+                    if (gameboardModule.receiveAttack(selectedXaxis, selectedYaxis)) {
                         enemyBoardDiv.style.backgroundColor = 'red';
+                        //this marks the enemy board so the other player can view where they have been hit by the opposing player
+                        document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'red';
+                        alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
                     } else {
                         enemyBoardDiv.style.backgroundColor = 'grey';
+                        //this query selector marks misses on the other players board to view where they have been missed by the opposing player
+                        document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'grey';
+                        alert(`attack ${selectedXaxis}, ${selectedYaxis} misses!`)
                     }
                     playerAndPCModule.playerTurnHandler();
                 });
@@ -497,12 +507,15 @@ const gameboardModule = (() => {
     }
     //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
     function receiveAttack(xCoordinates, yCoordinates) {
+        console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
         let xCoordinatesTrue = null;
         let yCoordinatesTrue = null;
         //write an attackedCoordinates checker so the player cannot call on the same coordinates more than once
         for (let i = 0; i < dataModule.currentEnemyGameboard.length; i++) {
             xCoordinatesTrue = null;
             yCoordinatesTrue = null;
+
+
             //console.log(dataModule.currentEnemyGameboard[i].xAxis, dataModule.currentEnemyGameboard[i].yAxis)
             //checks if xCoordinate hits
             for (let j = 0; j < dataModule.currentEnemyGameboard[i].xAxis.length; j++) {
@@ -523,14 +536,17 @@ const gameboardModule = (() => {
                 if (dataModule.player1Turn == true) {
                     dataModule.player1AttackedCoordinates.push(hitXYCoordinates);
                     dataModule.player2Gameboard[i].shipObj.hits++;
-
+                    //check if sunk or won game
+                    shipModule.isSunk(dataModule.player2Gameboard[i].shipObj)
+                    gameboardModule.winCheck()
                 } else {
                     dataModule.player2AttackedCoordinates.push(hitXYCoordinates);
                     dataModule.player1Gameboard[i].shipObj.hits++;
+                    shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
+                    gameboardModule.winCheck()
                 }
                 console.log('test1')
-
-                return true, alert(`attack ${xCoordinates}, ${yCoordinates} hits!`);
+                return true;
             }
             //only throw the missed attack after checking every ships coordinates
             if (i == dataModule.currentEnemyGameboard.length - 1) {
@@ -545,7 +561,7 @@ const gameboardModule = (() => {
                     } else {
                         dataModule.player2AttackedCoordinates.push(missedXYCoordinates)
                     }
-                    return false, alert(`attack ${xCoordinates}, ${yCoordinates} misses!`);
+                    return false;
                 }
             }
         }
@@ -569,9 +585,17 @@ const gameboardModule = (() => {
         }
 
         if (player1SunkShips == dataModule.player1Gameboard.length) {
-            return alert('player 2 wins!');
+            document.getElementById('gameboard-container-0').style.display = 'none';
+            document.getElementById('gameboard-container-1').style.display = 'none';
+            document.getElementById('gameboard-header-container').style.display = 'none';
+            document.getElementById('victory-screen').textContent = 'player 2 Wins!!';
+            document.getElementById('victory-screen').style.display = 'flex';
         } else if (player2SunkShips == dataModule.player2Gameboard.length) {
-            return alert('player 1 wins!');
+            document.getElementById('gameboard-container-0').style.display = 'none';
+            document.getElementById('gameboard-container-1').style.display = 'none';
+            document.getElementById('gameboard-header-container').style.display = 'none';
+            document.getElementById('victory-screen').textContent = 'player 1 Wins!!';
+            document.getElementById('victory-screen').style.display = 'flex';
         } else {
             return null;
         }
@@ -622,7 +646,7 @@ const shipModule = (() => {
     function isSunk(shipObj) {
 
         if (shipObj.length == shipObj.hits) {
-            shipObj.isSunk = true
+            shipObj.sunk = true
             return alert('ship is sunk!');
         }
     }
