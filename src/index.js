@@ -9,6 +9,7 @@ const dataModule = (() => {
     let player1AttackedCoordinates = [];
     let player2AttackedCoordinates = [];
     let pvp = false;
+    //determines players turns when setting up board, afterwards it is used to determine player turn in the gameloop
     let player1Turn = true;
     //becomes true when the player is placing a ship
     let shipSelection = true;
@@ -51,12 +52,29 @@ const domModule = (() => {
 })();
 
 const playerAndPCModule = (() => {
-    //this function deals hiding player screens between device handoffs and 
-
+    //this function deals hiding player screens between device handoffs and changing the player gameboards between turns
     function playerTurnHandler() {
         document.getElementById('gameboard-container-0').style.display = 'none';
         document.getElementById('gameboard-container-1').style.display = 'none';
-        //if its a pvp game this statement block should insure the screen is hidden when passing the device
+        //this if block handles PvE
+        if (dataModule.player1Turn == false && dataModule.pvp == false) {
+            document.getElementById('gameboard-container-0').style.display = 'flex';
+            dataModule.player1Turn = true;
+            dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
+            dataModule.currentEnemyGameboard = dataModule.player2Gameboard;
+            alert('human player\'s turn');
+            return null;
+        } else if (dataModule.player1Turn == true && dataModule.pvp == false) {
+            document.getElementById('gameboard-container-0').style.display = 'flex';
+            alert('pc players turn');
+            //create and call a function that causes the pc player to make a random attacks, you may be able to use it to place ships as well
+            playerAndPCModule.pcPlay(); //this isnt working??
+            dataModule.player1Turn = false;
+            dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
+            dataModule.currentEnemyGameboard = dataModule.player1Gameboard;
+            return null;
+        }
+        //if its a PvP game this statement block should insure the screen is hidden when passing the device
         if (dataModule.player1Turn == true && dataModule.pvp == true || dataModule.player1Turn == false && dataModule.pvp == true) {
             if (dataModule.player1Turn == false) {
                 //the setTimeout function are used since it seems an alert statement actually gets fired before anything else in this block then immediatley firing the code after the alerts code line once the alert is closed, the setTimeout function fixes this by 
@@ -73,8 +91,7 @@ const playerAndPCModule = (() => {
                     document.getElementById('gameboard-container-0').style.display = 'flex';
 
                 }, 180);
-
-                return false;
+                return null;
             } else {
                 //implement a DOM handler to cover the game board when the DOM actually gets implemented
                 setTimeout(() => {
@@ -88,43 +105,29 @@ const playerAndPCModule = (() => {
                     //turn off the 1st player gameboard display and turn on the 2nd players
                     document.getElementById('gameboard-container-1').style.display = 'flex';
                 }, 180);
-
-
-                return true;
-            }
-        } else {
-            if (dataModule.player1Turn == true) {
-                alert('players turn');
-                dataModule.player1Turn = false;
-                dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
-                return false;
-            } else {
-                //alert('pc\'s turn');
-                dataModule.player1Turn = true;
-                dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
-                return true;
+                return null;
             }
         }
     }
-    //create an ai function that will determine the computer players attacks
+    //this function returns coordinate pairs for the PC player that can be used for attacking ships
     function pcPlay() {
         //get a random integer between 0 and 10 (x axis)
         let randomXCoordinate = Math.floor(Math.random() * 11);
         //get a random integer between 0 and 10 (y axis)
         let randomYCoordinate = Math.floor(Math.random() * 11);
-        //plug the random x and y coordinates IF they do not match a pair of coordinates in the dataModule usedCoordinates array
-        for (i = 0; i < dataModule.usedCoordinates.length; i++) {
-            for (const property in dataModule.usedCoordinates[i]) {
-                //this block will recursively call the pcPlay function until the randomCoordinates consist of a pair that have not already been played
-                if (dataModule.usedCoordinates.x == randomXCoordinate && dataModule.usedCoordinates.y == randomYCoordinate) {
-                    pcPlay()
-                }
-            }
-        }
-        //if the random coordinate pairs do not match any in the usedCoordinates array they should be passed through the receive attack function
         gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
     }
-    return { playerTurnHandler, pcPlay }
+    //places a ship on a random coordinate 
+    function pcPlaceShips() {
+        let coord1 = randomCoordinate();
+        let coord2 = randomCoordinate();
+        document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`).click();
+    }
+    function randomCoordinate() {
+        let randomCoordinate = Math.floor(Math.random() * 11);
+        return randomCoordinate;
+    }
+    return { playerTurnHandler, pcPlay, pcPlaceShips, randomCoordinate }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
@@ -223,6 +226,7 @@ const gameLoopModule = (() => {
                     if (dataModule.placementPhase == false) {
                         return null;
                     }
+
                     if (dataModule.shipSelection == true) {
                         let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
                         let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
@@ -430,14 +434,27 @@ const gameLoopModule = (() => {
                             for (const property in dataModule.shipPlacementTracker) {
                                 dataModule.shipPlacementTracker[property] = false;
                             }
-                            if (dataModule.player1Turn == false) {
+                            if (dataModule.player1Turn == false && dataModule.pvp == true) {
                                 dataModule.placementPhase = false;
                                 return alert('game start!'), playerAndPCModule.playerTurnHandler();
                             }
-                            alert('player 2\'s turn to place ships')
-                            dataModule.player1Turn = false;
-                            //sets up player 2's board
-                            generateBoards();
+                            //this block only runs after last ship placement from player and when PvE mode is selected
+                            if (dataModule.pvp == false) {
+                                //below line stops the human player board from having ship placement hover effects
+                                dataModule.placementPhase = false;
+                                dataModule.player1Turn = false;
+                                generateBoards();
+                                //place the pc players ships before calling the playerTurnHandler() which commences the game loop
+                                for (let i = 0; i < dataModule.selectedShip.length; i++) {
+                                    playerAndPCModule.pcPlaceShips();
+                                }
+                                playerAndPCModule.playerTurnHandler();
+                            } else {
+                                alert('player 2\'s turn to place ships')
+                                dataModule.player1Turn = false;
+                                //sets up player 2's board
+                                generateBoards();
+                            }
                         }
                         //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
                         for (const property in dataModule.shipPlacementTracker) {
@@ -489,6 +506,7 @@ const gameLoopModule = (() => {
                 document.getElementById(`opponent-gameboard-${numberOfGameboards}`).appendChild(enemyBoardDiv);
             }
         }
+
     }
 
     return { userInterface, generateBoards };
