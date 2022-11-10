@@ -113,21 +113,17 @@ const playerAndPCModule = (() => {
     function pcPlay() {
         //get a random integer between 0 and 10 (x axis)
         let randomXCoordinate = Math.floor(Math.random() * 11);
+        console.log(randomXCoordinate)
         //get a random integer between 0 and 10 (y axis)
         let randomYCoordinate = Math.floor(Math.random() * 11);
         gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
     }
-    //places a ship on a random coordinate 
-    function pcPlaceShips() {
-        let coord1 = randomCoordinate();
-        let coord2 = randomCoordinate();
-        document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`).click();
-    }
+
     function randomCoordinate() {
-        let randomCoordinate = Math.floor(Math.random() * 11);
-        return randomCoordinate;
+
+        return Math.floor(Math.random() * 11);
     }
-    return { playerTurnHandler, pcPlay, pcPlaceShips, randomCoordinate }
+    return { playerTurnHandler, pcPlay, randomCoordinate }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
@@ -430,31 +426,25 @@ const gameLoopModule = (() => {
                         //the remaining blocks handle ship placement logic
                         //signals the next players turn, switches the playerGameboard, and resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
                         if (dataModule.shipPlacementTracker.patrolBoat == true) {
-
+                            //below line stops the human player board from having ship placement hover effects in PvE
+                            if (dataModule.pvp == false) {
+                                dataModule.placementPhase = false;
+                            }
                             for (const property in dataModule.shipPlacementTracker) {
                                 dataModule.shipPlacementTracker[property] = false;
                             }
+                            //stops mouse hover effects after all ships have been placed by both players in PvP and starts the game
                             if (dataModule.player1Turn == false && dataModule.pvp == true) {
                                 dataModule.placementPhase = false;
                                 return alert('game start!'), playerAndPCModule.playerTurnHandler();
                             }
-                            //this block only runs after last ship placement from player and when PvE mode is selected
-                            if (dataModule.pvp == false) {
-                                //below line stops the human player board from having ship placement hover effects
-                                dataModule.placementPhase = false;
-                                dataModule.player1Turn = false;
-                                generateBoards();
-                                //place the pc players ships before calling the playerTurnHandler() which commences the game loop
-                                for (let i = 0; i < dataModule.selectedShip.length; i++) {
-                                    playerAndPCModule.pcPlaceShips();
-                                }
-                                playerAndPCModule.playerTurnHandler();
-                            } else {
+                            if (dataModule.pvp == true) {
                                 alert('player 2\'s turn to place ships')
-                                dataModule.player1Turn = false;
-                                //sets up player 2's board
-                                generateBoards();
                             }
+                            dataModule.player1Turn = false;
+                            //sets up player 2 or AI gameboard
+                            generateBoards();
+
                         }
                         //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
                         for (const property in dataModule.shipPlacementTracker) {
@@ -506,7 +496,24 @@ const gameLoopModule = (() => {
                 document.getElementById(`opponent-gameboard-${numberOfGameboards}`).appendChild(enemyBoardDiv);
             }
         }
-
+        //places the pc players ships
+        if (dataModule.pvp == false && dataModule.player1Turn == false) {
+            console.log('asfasdf')
+            //place the pc players ships before calling the playerTurnHandler() which commences the game loop
+            document.getElementById('gameboard-container-0').style.display = 'none';
+            document.getElementById('gameboard-container-1').style.display = 'flex';
+            for (let i = 0; i < 5; i++) {
+                let coord1 = playerAndPCModule.randomCoordinate();
+                let coord2 = playerAndPCModule.randomCoordinate();
+                document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`).click();
+                console.log(dataModule.player2Gameboard)
+            }
+        }
+        //thistriggers the game to start after the pc places its ships in PvE game modes
+        if (dataModule.pvp == false && dataModule.placementPhase == false) {
+            console.log('qwer')
+            playerAndPCModule.playerTurnHandler();
+        }
     }
 
     return { userInterface, generateBoards };
@@ -523,7 +530,7 @@ const gameboardModule = (() => {
         shipPlacement.yAxis = yCoordinates;
         return shipPlacement;
     }
-    //playerAttackedCoordinates should be the attacking players used coordinates, x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
+    //x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
     function receiveAttack(xCoordinates, yCoordinates) {
         console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
         let xCoordinatesTrue = null;
@@ -678,12 +685,7 @@ const shipModule = (() => {
 let testShip = shipModule.shipConstructor.battleship
 dataModule.selectedShip = { testShip };
 
-
 gameLoopModule.userInterface();
-
-
-
-
 //let testDiv = domModule.createElementIdClass('div','test', 'test');
 //document.getElementById('content').appendChild(testDiv);
 
