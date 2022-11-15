@@ -54,6 +54,7 @@ const domModule = (() => {
 const playerAndPCModule = (() => {
     //this function deals hiding player screens between device handoffs and changing the player gameboards between turns
     function playerTurnHandler() {
+        console.log(`player 1 turn? ${dataModule.player1Turn}, current gameboard? ${dataModule.currentPlayerGameboard}`)
         document.getElementById('gameboard-container-0').style.display = 'none';
         document.getElementById('gameboard-container-1').style.display = 'none';
         //this if block handles PvE
@@ -68,7 +69,7 @@ const playerAndPCModule = (() => {
             document.getElementById('gameboard-container-0').style.display = 'flex';
             alert('pc players turn');
             //create and call a function that causes the pc player to make a random attacks, you may be able to use it to place ships as well
-            playerAndPCModule.pcPlay(); //this isnt working??
+            playerAndPCModule.pcPlay();
             dataModule.player1Turn = false;
             dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
             dataModule.currentEnemyGameboard = dataModule.player1Gameboard;
@@ -111,12 +112,9 @@ const playerAndPCModule = (() => {
     }
     //this function returns coordinate pairs for the PC player that can be used for attacking ships
     function pcPlay() {
-        //get a random integer between 0 and 10 (x axis)
-        let randomXCoordinate = Math.floor(Math.random() * 11);
-        console.log(randomXCoordinate)
-        //get a random integer between 0 and 10 (y axis)
-        let randomYCoordinate = Math.floor(Math.random() * 11);
-        gameboardModule.receiveAttack(randomXCoordinate, randomYCoordinate);
+        let randomXCoordinate = randomCoordinate();
+        let randomYCoordinate = randomCoordinate();
+        document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`).click()
     }
 
     function randomCoordinate() {
@@ -128,21 +126,18 @@ const playerAndPCModule = (() => {
         //place the pc players ships before calling the playerTurnHandler() which commences the game loop
         dataModule.currentPlayerGameboard = dataModule.player2Gameboard
 
-        for (let i = 0; i < 5; i++) {
-            let coord1 = playerAndPCModule.randomCoordinate();
-            let coord2 = playerAndPCModule.randomCoordinate();
-            console.log(dataModule.player2Gameboard, coord1);
-            let randomCoordinate = document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`);
-            randomCoordinate.click();
-            console.log(dataModule.player2Gameboard)
+        for (let i = 0; dataModule.player2Gameboard.length < 5; i++) {
+            let randomXCoordinate = playerAndPCModule.randomCoordinate();
+            let randomYCoordinate = playerAndPCModule.randomCoordinate();
+            console.log(dataModule.player2Gameboard, randomXCoordinate, randomYCoordinate);
+            document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`).click();
         }
+        console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
+
         dataModule.placementPhase = false;
         //this triggers the game to start after the pc places its ships in PvE game modes
-        console.log('qwer')
         playerAndPCModule.playerTurnHandler();
     }
-
-
     return { playerTurnHandler, pcPlay, randomCoordinate, pcPlaceShips }
 })();
 //create the main game loop and a module for DOM interaction. 
@@ -236,18 +231,15 @@ const gameLoopModule = (() => {
 
                 let playerGameboardDiv = document.createElement('div');
                 let enemyBoardDiv = document.createElement('div');
-
                 //this mouseover event listener allows the DOM to display to users whether or not a ship placement is appropriate
                 playerGameboardDiv.addEventListener('mouseenter', () => {
                     if (dataModule.placementPhase == false) {
                         return null;
                     }
-
                     //below line stops the human player board from having ship placement hover effects in PvE
                     if (dataModule.pvp == false && dataModule.player1Turn == false) {
                         return null;
                     }
-
                     if (dataModule.placementPhase == true) {
                         let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
                         let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
@@ -292,6 +284,10 @@ const gameLoopModule = (() => {
                     let firstIteration = true;
 
                     if (dataModule.placementPhase == false) {
+                        return null;
+                    }
+                    //below line stops the human player board from having ship placement hover effects in PvE
+                    if (dataModule.pvp == false && dataModule.player1Turn == false) {
                         return null;
                     }
                     if (dataModule.placementPhase == true) {
@@ -346,10 +342,18 @@ const gameLoopModule = (() => {
                         //checks for invalid placements on the xAxis
                         if (selectedXaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == false) {
                             console.log(selectedXaxis, selectedYaxis, dataModule.selectedShip.length)
-                            return alert('invalid placement on the X Axis!');
+                            if (dataModule.pvp == true) {
+                                return alert('invalid placement on the X Axis!');
+                            } else {
+                                return null
+                            }
                             //values greater than 11 on the yAxis are only possible when vertical ship rotation is active
                         } else if (selectedYaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == true) {
-                            return alert('invalid placement on the Y Axis!')
+                            if (dataModule.pvp == true) {
+                                return alert('invalid placement on the Y Axis!')
+                            } else {
+                                return null;
+                            }
                         }
                         //sets up the player gameboard on each placement turn to be iterated in the next for loop block, player turns after ship placement are handled by playerTurnHandler()
                         if (dataModule.player1Turn == true) {
@@ -524,10 +528,7 @@ const gameLoopModule = (() => {
         }
         //places the pc players ships after player 1's turn is over
         if (dataModule.pvp == false && dataModule.player1Turn == false) {
-            document.querySelector(`[data-xaxis="1"][data-yaxis="3"][class="gameboard-1-cell"]`).click()
-            console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
-
-            //playerAndPCModule.pcPlaceShips();
+            playerAndPCModule.pcPlaceShips();
         }
     }
 
@@ -585,13 +586,11 @@ const gameboardModule = (() => {
                     shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
                     gameboardModule.winCheck()
                 }
-                console.log('test1')
                 return true;
             }
             //only throw the missed attack after checking every ships coordinates
             if (i == dataModule.currentEnemyGameboard.length - 1) {
                 if (xCoordinatesTrue || yCoordinatesTrue != true) {
-                    console.log('test12')
 
                     let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
                     dataModule.hitBool = false;
