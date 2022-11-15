@@ -123,7 +123,27 @@ const playerAndPCModule = (() => {
 
         return Math.floor(Math.random() * 11);
     }
-    return { playerTurnHandler, pcPlay, randomCoordinate }
+
+    function pcPlaceShips() {
+        //place the pc players ships before calling the playerTurnHandler() which commences the game loop
+        dataModule.currentPlayerGameboard = dataModule.player2Gameboard
+
+        for (let i = 0; i < 5; i++) {
+            let coord1 = playerAndPCModule.randomCoordinate();
+            let coord2 = playerAndPCModule.randomCoordinate();
+            console.log(dataModule.player2Gameboard, coord1);
+            let randomCoordinate = document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`);
+            randomCoordinate.click();
+            console.log(dataModule.player2Gameboard)
+        }
+        dataModule.placementPhase = false;
+        //this triggers the game to start after the pc places its ships in PvE game modes
+        console.log('qwer')
+        playerAndPCModule.playerTurnHandler();
+    }
+
+
+    return { playerTurnHandler, pcPlay, randomCoordinate, pcPlaceShips }
 })();
 //create the main game loop and a module for DOM interaction. 
 const gameLoopModule = (() => {
@@ -223,7 +243,12 @@ const gameLoopModule = (() => {
                         return null;
                     }
 
-                    if (dataModule.shipSelection == true) {
+                    //below line stops the human player board from having ship placement hover effects in PvE
+                    if (dataModule.pvp == false && dataModule.player1Turn == false) {
+                        return null;
+                    }
+
+                    if (dataModule.placementPhase == true) {
                         let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
                         let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                         let firstIteration = true;
@@ -269,7 +294,7 @@ const gameLoopModule = (() => {
                     if (dataModule.placementPhase == false) {
                         return null;
                     }
-                    if (dataModule.shipSelection == true) {
+                    if (dataModule.placementPhase == true) {
                         //adding + 1 to the selectedShip.length insures that there wont be a left over blue placement div as the blue shipShadow shrinks by 1 when the user places a ship
                         for (let i = 0; i < dataModule.selectedShip.length + 1; i++) {
                             //push the divs current colors to previousColors array in case the user decides to place a ship, the divs should keep the green placement color as opposed to turning back to the board color black
@@ -304,9 +329,9 @@ const gameLoopModule = (() => {
                     }
                 });
 
-                //this click event listener should be responsible for placing ships in the DOM and recording their coordinates to the respective gameboard object
+                //this click event listener is responsible for placing ships in the DOM and recording their coordinates to the respective gameboard object
                 playerGameboardDiv.addEventListener('click', () => {
-                    console.log(dataModule.currentPlayerGameboard)
+                    console.log(`current gameboard -> ${dataModule.currentPlayerGameboard}`)
                     let selectedXaxis = parseInt(playerGameboardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(playerGameboardDiv.dataset.yaxis);
                     let shipObj = shipModule.shipConstructor();
@@ -317,7 +342,7 @@ const gameLoopModule = (() => {
                     if (dataModule.placementPhase == false) {
                         return null;
                     }
-                    if (dataModule.shipSelection == true) {
+                    if (dataModule.placementPhase == true) {
                         //checks for invalid placements on the xAxis
                         if (selectedXaxis + dataModule.selectedShip.length > 11 && dataModule.verticalShipRotation == false) {
                             console.log(selectedXaxis, selectedYaxis, dataModule.selectedShip.length)
@@ -368,7 +393,11 @@ const gameLoopModule = (() => {
                                     }
                                 });
                                 if (occupiedXCoordinate && occupiedYCoordinate == true) {
-                                    return alert('these coordinates are occupied by another ship! please choose different coordinates.');
+                                    if (dataModule.pvp == true) {
+                                        return alert('these coordinates are occupied by another ship! please choose different coordinates.');
+                                    } else {
+                                        return null;
+                                    }
                                 }
                             }
                             //these variables must be reset every ship object iteration in the main loop
@@ -424,12 +453,9 @@ const gameLoopModule = (() => {
                             }
                         }
                         //the remaining blocks handle ship placement logic
-                        //signals the next players turn, switches the playerGameboard, and resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
+                        //signals the next players turn DURING the placement phase, switches the playerGameboard, and resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
                         if (dataModule.shipPlacementTracker.patrolBoat == true) {
-                            //below line stops the human player board from having ship placement hover effects in PvE
-                            if (dataModule.pvp == false) {
-                                dataModule.placementPhase = false;
-                            }
+
                             for (const property in dataModule.shipPlacementTracker) {
                                 dataModule.shipPlacementTracker[property] = false;
                             }
@@ -441,6 +467,7 @@ const gameLoopModule = (() => {
                             if (dataModule.pvp == true) {
                                 alert('player 2\'s turn to place ships')
                             }
+
                             dataModule.player1Turn = false;
                             //sets up player 2 or AI gameboard
                             generateBoards();
@@ -483,7 +510,6 @@ const gameLoopModule = (() => {
                     }
                     playerAndPCModule.playerTurnHandler();
                 });
-
                 //this block creates new divs with data-x/y-axis values and appends them to each player gameboard
                 playerGameboardDiv.dataset.xaxis = `${j}`;
                 playerGameboardDiv.dataset.yaxis = `${i}`;
@@ -496,23 +522,12 @@ const gameLoopModule = (() => {
                 document.getElementById(`opponent-gameboard-${numberOfGameboards}`).appendChild(enemyBoardDiv);
             }
         }
-        //places the pc players ships
+        //places the pc players ships after player 1's turn is over
         if (dataModule.pvp == false && dataModule.player1Turn == false) {
-            console.log('asfasdf')
-            //place the pc players ships before calling the playerTurnHandler() which commences the game loop
-            document.getElementById('gameboard-container-0').style.display = 'none';
-            document.getElementById('gameboard-container-1').style.display = 'flex';
-            for (let i = 0; i < 5; i++) {
-                let coord1 = playerAndPCModule.randomCoordinate();
-                let coord2 = playerAndPCModule.randomCoordinate();
-                document.querySelector(`[data-xaxis="${coord1}"][data-yaxis="${coord2}"][class="gameboard-1-cell"]`).click();
-                console.log(dataModule.player2Gameboard)
-            }
-        }
-        //thistriggers the game to start after the pc places its ships in PvE game modes
-        if (dataModule.pvp == false && dataModule.placementPhase == false) {
-            console.log('qwer')
-            playerAndPCModule.playerTurnHandler();
+            document.querySelector(`[data-xaxis="1"][data-yaxis="3"][class="gameboard-1-cell"]`).click()
+            console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
+
+            //playerAndPCModule.pcPlaceShips();
         }
     }
 
