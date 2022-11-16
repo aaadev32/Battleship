@@ -124,17 +124,26 @@ const playerAndPCModule = (() => {
 
     function pcPlaceShips() {
         //place the pc players ships before calling the playerTurnHandler() which commences the game loop
-        dataModule.currentPlayerGameboard = dataModule.player2Gameboard
+        //prevents the only for in loop on the ship placement click event listener from starting with patrol boat
 
         for (let i = 0; dataModule.player2Gameboard.length < 5; i++) {
             let randomXCoordinate = playerAndPCModule.randomCoordinate();
             let randomYCoordinate = playerAndPCModule.randomCoordinate();
+            let randomVerticalSelection = playerAndPCModule.randomCoordinate();
+            //creates a 50% chance to rotate ship placement for the pc player, null selectons 
+            if (randomVerticalSelection <= 5) {
+                dataModule.verticalShipRotation = true;
+            } else {
+                dataModule.verticalShipRotation = false;
+            }
             console.log(dataModule.player2Gameboard, randomXCoordinate, randomYCoordinate);
-            document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`).click();
+            //optional chaining operator keeps query selector from throwing null
+            document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`)?.click();
         }
         console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
 
         dataModule.placementPhase = false;
+        dataModule.verticalShipRotation = false;
         //this triggers the game to start after the pc places its ships in PvE game modes
         playerAndPCModule.playerTurnHandler();
     }
@@ -456,27 +465,6 @@ const gameLoopModule = (() => {
                                 shipPlacement.style.backgroundColor = 'green';
                             }
                         }
-                        //the remaining blocks handle ship placement logic
-                        //signals the next players turn DURING the placement phase, switches the playerGameboard, and resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
-                        if (dataModule.shipPlacementTracker.patrolBoat == true) {
-
-                            for (const property in dataModule.shipPlacementTracker) {
-                                dataModule.shipPlacementTracker[property] = false;
-                            }
-                            //stops mouse hover effects after all ships have been placed by both players in PvP and starts the game
-                            if (dataModule.player1Turn == false && dataModule.pvp == true) {
-                                dataModule.placementPhase = false;
-                                return alert('game start!'), playerAndPCModule.playerTurnHandler();
-                            }
-                            if (dataModule.pvp == true) {
-                                alert('player 2\'s turn to place ships')
-                            }
-
-                            dataModule.player1Turn = false;
-                            //sets up player 2 or AI gameboard
-                            generateBoards();
-
-                        }
                         //a false property in the shipPlacementTracker means the ship hasnt been placed and will become the dataModule.selectedShip for placement on playerNGameboard
                         for (const property in dataModule.shipPlacementTracker) {
                             if (dataModule.shipPlacementTracker[property] == false) {
@@ -485,6 +473,31 @@ const gameLoopModule = (() => {
                                 return dataModule.selectedShip = shipObj[property];
                             }
                         }
+                        //the remaining blocks handle ship placement logic
+                        //signals the next players turn DURING the placement phase, switches the playerGameboard, and resets the shipPlacementTracker property values to false so it can be used for the next player ship placements
+                        if (dataModule.shipPlacementTracker.patrolBoat == true) {
+                            //resets the tracker property values
+                            for (const property in dataModule.shipPlacementTracker) {
+                                dataModule.shipPlacementTracker[property] = false;
+                            }
+                            //im too slow to understand why the below 2 lines are neccessary to stop double ship placements :^)
+                            dataModule.selectedShip = shipObj.carrier;
+                            dataModule.shipPlacementTracker.carrier = true;
+
+                            //stops mouse hover effects after all ships have been placed by both players in PvP and starts the game
+                            if (dataModule.player1Turn == false && dataModule.pvp == true) {
+                                dataModule.placementPhase = false;
+                                return alert('game start!'), playerAndPCModule.playerTurnHandler();
+                            }
+                            if (dataModule.pvp == true) {
+                                alert('player 2\'s turn to place ships')
+                            }
+                            dataModule.player1Turn = false;
+                            //sets up player 2 or AI gameboard
+                            generateBoards();
+
+                        }
+
                     }
                 });
 
@@ -528,6 +541,7 @@ const gameLoopModule = (() => {
         }
         //places the pc players ships after player 1's turn is over
         if (dataModule.pvp == false && dataModule.player1Turn == false) {
+            //the below low lines set up the shipPlacement tracker normally done in the click event listener for Pv
             playerAndPCModule.pcPlaceShips();
         }
     }
