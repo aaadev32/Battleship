@@ -5,9 +5,6 @@ const dataModule = (() => {
     //the gameboard arrays will store the ship objects, the attacked coordinates keeps track of what plays each player has already made.
     let player1Gameboard = [];
     let player2Gameboard = [];
-    //these attacked coordinates never get utilized so far but may need them when coding the AI
-    let player1AttackedCoordinates = [];
-    let player2AttackedCoordinates = [];
     let pvp = false;
     //determines players turns when setting up board, afterwards it is used to determine player turn in the gameloop
     let player1Turn = true;
@@ -32,7 +29,7 @@ const dataModule = (() => {
     }
 
     return {
-        player1Gameboard, player2Gameboard, player1AttackedCoordinates, player2AttackedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, shipPlacementTracker
+        player1Gameboard, player2Gameboard, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, shipPlacementTracker
     };
 })();
 const domModule = (() => {
@@ -59,20 +56,23 @@ const playerAndPCModule = (() => {
         document.getElementById('gameboard-container-1').style.display = 'none';
         //this if block handles PvE
         if (dataModule.player1Turn == false && dataModule.pvp == false) {
+            alert('players turn')
             document.getElementById('gameboard-container-0').style.display = 'flex';
             dataModule.player1Turn = true;
             dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
             dataModule.currentEnemyGameboard = dataModule.player2Gameboard;
-            alert('human player\'s turn');
             return null;
         } else if (dataModule.player1Turn == true && dataModule.pvp == false) {
             document.getElementById('gameboard-container-0').style.display = 'flex';
-            alert('pc players turn');
-            //create and call a function that causes the pc player to make a random attacks, you may be able to use it to place ships as well
-            playerAndPCModule.pcPlay();
+            alert('pc\s turn')
+
             dataModule.player1Turn = false;
             dataModule.currentPlayerGameboard = dataModule.player2Gameboard;
             dataModule.currentEnemyGameboard = dataModule.player1Gameboard;
+
+            let randomXCoordinate = randomCoordinate();
+            let randomYCoordinate = randomCoordinate();
+            document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`)?.click()
             return null;
         }
         //if its a PvP game this statement block should insure the screen is hidden when passing the device
@@ -110,16 +110,9 @@ const playerAndPCModule = (() => {
             }
         }
     }
-    //this function returns coordinate pairs for the PC player that can be used for attacking ships
-    function pcPlay() {
-        let randomXCoordinate = randomCoordinate();
-        let randomYCoordinate = randomCoordinate();
-        document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`).click()
-    }
 
     function randomCoordinate() {
-
-        return Math.floor(Math.random() * 11);
+        return Math.ceil(Math.random() * 11);
     }
 
     function pcPlaceShips() {
@@ -140,16 +133,15 @@ const playerAndPCModule = (() => {
             //optional chaining operator keeps query selector from throwing null
             document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="gameboard-1-cell"]`)?.click();
         }
-        console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
-
         dataModule.placementPhase = false;
         dataModule.verticalShipRotation = false;
-        //this triggers the game to start after the pc places its ships in PvE game modes
+        //sets up playerTurnHandler for player 1's turn since player1Turn variable is used for determining ship placement turn as well
+        dataModule.player1Turn = false;
         playerAndPCModule.playerTurnHandler();
     }
-    return { playerTurnHandler, pcPlay, randomCoordinate, pcPlaceShips }
+    return { playerTurnHandler, randomCoordinate, pcPlaceShips }
 })();
-//create the main game loop and a module for DOM interaction. 
+//this module deals with event listeners and UI that triggers the game loop
 const gameLoopModule = (() => {
     //displays opening UI and choices for starting the game
     function userInterface() {
@@ -364,7 +356,7 @@ const gameLoopModule = (() => {
                                 return null;
                             }
                         }
-                        //sets up the player gameboard on each placement turn to be iterated in the next for loop block, player turns after ship placement are handled by playerTurnHandler()
+                        //sets up the player gameboard on each placement turn to be iterated in the next for loop block, player turns after ship placement are handled by playerTurnHandler() on attacks
                         if (dataModule.player1Turn == true) {
                             dataModule.currentPlayerGameboard = dataModule.player1Gameboard;
                         } else {
@@ -495,9 +487,7 @@ const gameLoopModule = (() => {
                             dataModule.player1Turn = false;
                             //sets up player 2 or AI gameboard
                             generateBoards();
-
                         }
-
                     }
                 });
 
@@ -510,10 +500,18 @@ const gameLoopModule = (() => {
                         dataModule.opponentBoardNumber = 0;
                     }
                     if (enemyBoardDiv.style.backgroundColor == 'grey' || enemyBoardDiv.style.backgroundColor == 'red') {
-                        return alert('choose another coordinate');
+                        //makes the pc ai attack again in the case where it would attack a coordinate that has been used before
+                        if (dataModule.pvp == false && dataModule.player1Turn == false) {
+                            let randomXCoordinate = playerAndPCModule.randomCoordinate();
+                            let randomYCoordinate = playerAndPCModule.randomCoordinate();
+                            document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`)?.click()
+                        } else {
+                            return alert('choose another coordinate');
+                        }
                     }
                     let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
+                    console.log(`selected x-axis ${selectedXaxis}, selected y-axis${selectedYaxis}`);
                     if (gameboardModule.receiveAttack(selectedXaxis, selectedYaxis)) {
                         enemyBoardDiv.style.backgroundColor = 'red';
                         //this marks the enemy board so the other player can view where they have been hit by the opposing player
@@ -562,16 +560,13 @@ const gameboardModule = (() => {
     }
     //x/ycoordinates are the chosen coordinates by the attacking player, currentPlayerGameboard should be set properly prior to calling this function
     function receiveAttack(xCoordinates, yCoordinates) {
-        console.log(dataModule.player1Gameboard, dataModule.player2Gameboard)
+        console.log(dataModule.currentEnemyGameboard)
         let xCoordinatesTrue = null;
         let yCoordinatesTrue = null;
         //write an attackedCoordinates checker so the player cannot call on the same coordinates more than once
         for (let i = 0; i < dataModule.currentEnemyGameboard.length; i++) {
             xCoordinatesTrue = null;
             yCoordinatesTrue = null;
-
-
-            //console.log(dataModule.currentEnemyGameboard[i].xAxis, dataModule.currentEnemyGameboard[i].yAxis)
             //checks if xCoordinate hits
             for (let j = 0; j < dataModule.currentEnemyGameboard[i].xAxis.length; j++) {
                 if (dataModule.currentEnemyGameboard[i].xAxis[j] == xCoordinates) {
@@ -586,40 +581,21 @@ const gameboardModule = (() => {
             }
             //if both coordinates hits are true, call hit function on correct ship and index of its hits array
             if (xCoordinatesTrue && yCoordinatesTrue == true) {
-                let hitXYCoordinates = { x: xCoordinates, y: yCoordinates };
                 dataModule.hitBool = true;
                 if (dataModule.player1Turn == true) {
-                    dataModule.player1AttackedCoordinates.push(hitXYCoordinates);
                     dataModule.player2Gameboard[i].shipObj.hits++;
                     //check if sunk or won game
                     shipModule.isSunk(dataModule.player2Gameboard[i].shipObj)
                     gameboardModule.winCheck()
                 } else {
-                    dataModule.player2AttackedCoordinates.push(hitXYCoordinates);
                     dataModule.player1Gameboard[i].shipObj.hits++;
                     shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
                     gameboardModule.winCheck()
                 }
                 return true;
             }
-            //only throw the missed attack after checking every ships coordinates
-            if (i == dataModule.currentEnemyGameboard.length - 1) {
-                if (xCoordinatesTrue || yCoordinatesTrue != true) {
-
-                    let missedXYCoordinates = { x: xCoordinates, y: yCoordinates };
-                    dataModule.hitBool = false;
-                    if (dataModule.player1Turn == true) {
-                        dataModule.player1AttackedCoordinates.push(missedXYCoordinates)
-
-                    } else {
-                        dataModule.player2AttackedCoordinates.push(missedXYCoordinates)
-                    }
-                    return false;
-                }
-            }
         }
     }
-
 
     function winCheck() {
         let player1SunkShips = 0;
@@ -630,7 +606,6 @@ const gameboardModule = (() => {
                 player1SunkShips++;
             }
         }
-
         for (let i = 0; i < dataModule.player2Gameboard.length; i++) {
             if (dataModule.player2Gameboard[i].shipObj.sunk == true) {
                 player2SunkShips++;
@@ -653,8 +628,6 @@ const gameboardModule = (() => {
             return null;
         }
     }
-
-
     return { placeShip, receiveAttack, winCheck }
 })();
 
