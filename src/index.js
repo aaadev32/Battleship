@@ -211,24 +211,24 @@ const playerAndPCModule = (() => {
     //this function is used to check the ai's random moves for coordinates that have already been made keeping the ai from selecting the same attacks twice.
     function usedCoordinateCheck(xCoordinate, yCoordinate) {
         //checks if xCoordinate hits
-        let xCoordinatesUsed = null;
-        let yCoordinatesUsed = null;
+        let usedXCoordinatesBool = null;
+        let usedYCoordinatesBool = null;
         //x and yAxis arrays will always be the same length so it doesnt matter that the xAxis.length is used as the index iterator for both arrays
         for (let i = 0; i < dataModule.usedCoordinates.xAxis.length; i++) {
-            xCoordinatesUsed = dataModule.usedCoordinates.xAxis[i];
-            yCoordinatesUsed = dataModule.usedCoordinates.yAxis[i];
+            let xCoordinatesUsed = dataModule.usedCoordinates.xAxis[i];
+            let yCoordinatesUsed = dataModule.usedCoordinates.yAxis[i];
 
             if (xCoordinatesUsed == xCoordinate) {
-                xCoordinatesUsed = true;
+                usedXCoordinatesBool = true;
             }
             if (yCoordinatesUsed == yCoordinate) {
-                yCoordinatesUsed = true;
+                usedYCoordinatesBool = true;
             }
-            if (xCoordinatesUsed && yCoordinatesUsed == true) {
+            if (usedXCoordinatesBool && usedYCoordinatesBool == true) {
                 return true;
             }
-            xCoordinatesUsed = null;
-            yCoordinatesUsed = null;
+            usedXCoordinatesBool = null;
+            usedYCoordinatesBool = null;
         }
         return false;
     }
@@ -605,7 +605,6 @@ const gameLoopModule = (() => {
                         alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
                         //when attack misses the else box is triggered
                     } else {
-                        gameboardModule.receiveAttack(selectedXaxis, selectedYaxis)
                         //resets the boolean logic that chooses ai attack directions after a hit
                         if (dataModule.pvp == false && dataModule.player1Turn == false) {
                             if (dataModule.aiHitBool == true) {
@@ -661,8 +660,7 @@ const gameboardModule = (() => {
         let xCoordinatesTrue = null;
         let yCoordinatesTrue = null;
         for (let i = 0; i < dataModule.currentEnemyGameboard.length; i++) {
-            xCoordinatesTrue = null;
-            yCoordinatesTrue = null;
+
             //checks if xCoordinate hits
             for (let j = 0; j < dataModule.currentEnemyGameboard[i].xAxis.length; j++) {
                 if (dataModule.currentEnemyGameboard[i].xAxis[j] == xCoordinates) {
@@ -680,7 +678,14 @@ const gameboardModule = (() => {
                 //if both coordinates hits are true, call hit function on correct ship and index of its hits array
                 if (xCoordinatesTrue && yCoordinatesTrue == true) {
                     dataModule.hitBool = true;
+                    //records all coordinates hit or miss for PvE mode
+                    if (dataModule.player1Turn == false) {
+                        dataModule.usedCoordinates.xAxis.push(xCoordinates);
+                        dataModule.usedCoordinates.yAxis.push(yCoordinates);
+                        console.log(`used coordinates`, dataModule.usedCoordinates)
+                    }
                     //records hit coordinates for PvE
+
                     if (dataModule.player1Turn == false && dataModule.pvp == false) {
                         dataModule.hitCoordinates.xAxis.push(xCoordinates);
                         dataModule.hitCoordinates.yAxis.push(yCoordinates);
@@ -698,7 +703,6 @@ const gameboardModule = (() => {
                     }
                     return true;
                 }
-
                 //records all coordinates hit or miss for PvE mode
                 if (dataModule.player1Turn == false) {
                     dataModule.usedCoordinates.xAxis.push(xCoordinates);
@@ -716,6 +720,8 @@ const gameboardModule = (() => {
                     return false;
                 }
             }
+            xCoordinatesTrue = null;
+            yCoordinatesTrue = null;
         }
     }
 
