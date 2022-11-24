@@ -24,22 +24,21 @@ const dataModule = (() => {
     let shipSelection = true;
     //should be equal to the selected ship object and used to create the placement shadow when placing ships by accesing the ships length property
     let selectedShip = {};
-    let currentPlayerGameboard = null;
-    let currentEnemyGameboard = null
+    let currentPlayerGameboard, currentEnemyGameboard = null
     let placementPhase = true;
     let verticalShipRotation = false;
     //used in receiveAttack function to set divs marking hit or misses on gameboards, i used this over returning a bool in the receiveAttack because checking the bool also requires running the function causing the function to run twice
     let hitBool = null;
     let opponentBoardNumber;
-    //below 3 lines used to aid the pc moves in being more intelligent
+    //below 3 lines used to aid the ai intelligence
     let aiHitBool = null;
     let aiInitialHitXCoordinates = null;
     let aiInitialHitYCoordinates = null;
-    //the next 4 lines are bools for the 4 different attack directions set for the ai, when one hits it sets null until it misses or sinks a ship otherwise it is false and the next bool and associated attack move is tryed.
-    let aiAttackSubtractXBool = null;
-    let aiAttackSubtractYBool = null;
-    let aiAttackAddXBool = null;
-    let aiAttackAddYBool = null;
+    //next 2 lines keep track of consecutive hits for the ai
+    let aiRecentHitXCoordinates = null;
+    let aiRecentHitYCoordinates = null;
+    //the next 4  bools for the 4 different attack directions set for the ai, when a move is used its associated bool is set to true, this continues until the hit ship is sunk then the bools are all set back to false
+    let aiAttackSubtractXBool = false, aiAttackSubtractYBool = false, aiAttackAddXBool = false, aiAttackAddYBool = false;
     //this object keeps track of the ships that have been placed during a players turn (resets back to false at end of turn)
     let shipPlacementTracker = {
         carrier: false,
@@ -50,7 +49,7 @@ const dataModule = (() => {
     }
 
     return {
-        player1Gameboard, player2Gameboard, hitCoordinates, missedCoordinates, usedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, aiHitBool, aiInitialHitXCoordinates, aiInitialHitYCoordinates, aiAttackSubtractXBool, aiAttackSubtractYBool, aiAttackAddXBool, aiAttackAddYBool, shipPlacementTracker,
+        player1Gameboard, player2Gameboard, hitCoordinates, missedCoordinates, usedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, aiHitBool, aiInitialHitXCoordinates, aiInitialHitYCoordinates, aiRecentHitXCoordinates, aiRecentHitYCoordinates, aiAttackSubtractXBool, aiAttackSubtractYBool, aiAttackAddXBool, aiAttackAddYBool, shipPlacementTracker,
     };
 })();
 const domModule = (() => {
@@ -72,7 +71,6 @@ const domModule = (() => {
 const playerAndPCModule = (() => {
     //this function deals hiding player screens between device handoffs and changing the player gameboards between turns
     function playerTurnHandler() {
-        console.log(`player 1 turn? ${dataModule.player1Turn}, current gameboard? ${dataModule.currentPlayerGameboard}`)
         document.getElementById('gameboard-container-0').style.display = 'none';
         document.getElementById('gameboard-container-1').style.display = 'none';
         //this if block handles PvE
@@ -93,14 +91,15 @@ const playerAndPCModule = (() => {
 
             let randomXCoordinate = randomCoordinate();
             let randomYCoordinate = randomCoordinate();
-            //changes random coordinate pairs if they have already been used in an attacks
-            if (playerAndPCModule.usedCoordinateCheck(randomXCoordinate, randomYCoordinate) == true) {
-
-            }
+            //changes random coordinate pairs if they have already been used in an attack
             while (playerAndPCModule.usedCoordinateCheck(randomXCoordinate, randomYCoordinate)) {
-                randomXCoordinate = randomCoordinate();
-                randomYCoordinate = randomCoordinate();
-
+                console.log(playerAndPCModule.usedCoordinateCheck(randomXCoordinate, randomYCoordinate))
+                let newrandomXCoordinate = randomCoordinate();
+                let newrandomYCoordinate = randomCoordinate();
+                if (playerAndPCModule.usedCoordinateCheck(newrandomXCoordinate, newrandomYCoordinate) == false) {
+                    randomXCoordinate = newrandomXCoordinate;
+                    randomYCoordinate = newrandomYCoordinate;
+                }
                 //playerAndPCModule.usedCoordinateCheck(randomXCoordinate, randomYCoordinate)
                 console.log('while loop user coordinate function test')
             }
@@ -108,36 +107,90 @@ const playerAndPCModule = (() => {
             //makes the pc attacks more intelligent i.e. attacking an adjacent coordinate when hitting an opponents ship, the previousHitCoordinates are set in the click event listener for enemy gameboards, the aiHitBool is set to false in isSunk function
             if (dataModule.aiHitBool == true) {
                 //check for null on these attacks and preemptively set their associated bool to true
-                let aiAttackSubtractX = document.querySelector(`[data-xaxis="${dataModule.aiInitialHitXCoordinates - 1}"][data-yaxis="${dataModule.aiInitialHitYCoordinates}"][class="opponent-gameboard-1-cell"]`);
-                let aiAttackSubtractY = document.querySelector(`[data-xaxis="${dataModule.aiInitialHitXCoordinates}"][data-yaxis="${dataModule.aiInitialHitYCoordinates - 1}"][class="opponent-gameboard-1-cell"]`);
-                let aiAttackAddX = document.querySelector(`[data-xaxis="${dataModule.aiInitialHitXCoordinates + 1}"][data-yaxis="${dataModule.aiInitialHitYCoordinates}"][class="opponent-gameboard-1-cell"]`);
-                let aiAttackAddY = document.querySelector(`[data-xaxis="${dataModule.aiInitialHitXCoordinates}"][data-yaxis="${dataModule.aiInitialHitYCoordinates + 1}"][class="opponent-gameboard-1-cell"]`);
+                console.log(dataModule.aiInitialHitXCoordinates, dataModule.aiInitialHitYCoordinates, 'hit coords x/y')
+                let aiAttackSubtractX = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates - 1}"][data-yaxis="${dataModule.aiRecentHitYCoordinates}"][class="opponent-gameboard-1-cell"]`);
+                let aiAttackSubtractY = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates}"][data-yaxis="${dataModule.aiRecentHitYCoordinates - 1}"][class="opponent-gameboard-1-cell"]`);
+                let aiAttackAddX = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates + 1}"][data-yaxis="${dataModule.aiRecentHitYCoordinates}"][class="opponent-gameboard-1-cell"]`);
+                let aiAttackAddY = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates}"][data-yaxis="${dataModule.aiRecentHitYCoordinates + 1}"][class="opponent-gameboard-1-cell"]`);
 
-                //checks for null on each ai preset attack and switches its associated bool to true to signal that it has already been triggered so it does not run in the following if else blocks
-                if (aiAttackSubtractX == null) {
-                    dataModule.aiAttackSubtractXBool = false;
-                } else if (aiAttackSubtractY == null) {
-                    dataModule.aiAttackSubtractYBool = false;
-                } else if (aiAttackAddX == null) {
-                    dataModule.aiAttackAddXBool = false;
-                } else if (aiAttackAddY == null) {
-                    dataModule.aiAttackAddYBool = false;
-                }
+                //reset bools after each attack for recentHitCoordinate pair variables to check attack directions
+                dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
 
-                if (dataModule.aiAttackSubtractXBool == null) {
+                //checks the used coordinates array to make sure the ai attack selectors are valid, the moves that are not have their associated bools set to true(true bools are not run by the algorithm)
+                if (playerAndPCModule.usedCoordinateCheck(dataModule.aiRecentHitXCoordinates - 1, dataModule.aiRecentHitYCoordinates)) {
                     dataModule.aiAttackSubtractXBool = true;
-                    aiAttackSubtractX?.click();
-                } else if (dataModule.aiAttackSubtractYBool == null) {
+                }
+                if (playerAndPCModule.usedCoordinateCheck(dataModule.aiRecentHitXCoordinates, dataModule.aiRecentHitYCoordinates - 1)) {
                     dataModule.aiAttackSubtractYBool = true;
-                    aiAttackSubtractY?.click();
-                } else if (dataModule.aiAttackAddXBool == null) {
+                }
+                if (playerAndPCModule.usedCoordinateCheck(dataModule.aiRecentHitXCoordinates + 1, dataModule.aiRecentHitYCoordinates)) {
                     dataModule.aiAttackAddXBool = true;
-                    aiAttackAddX?.click();
-                } else if (dataModule.aiAttackAddYBool == null) {
+                }
+                if (playerAndPCModule.usedCoordinateCheck(dataModule.aiRecentHitXCoordinates, dataModule.aiRecentHitYCoordinates + 1)) {
                     dataModule.aiAttackAddYBool = true;
-                    aiAttackAddY?.click();
+                }
+                console.log(dataModule.aiAttackSubtractXBool, dataModule.aiAttackSubtractYBool, dataModule.aiAttackAddXBool, dataModule.aiAttackAddYBool, 1)
+                //checks for null on each ai preset attack querySelector and switches its associated bool to true to signal that it has already been triggered so it does not run in the following if else blocks which otherwise causes a null error
+                if (aiAttackSubtractX == null) {
+                    dataModule.aiAttackSubtractXBool = true;
+                }
+                if (aiAttackSubtractY == null) {
+                    dataModule.aiAttackSubtractYBool = true;
+                }
+                if (aiAttackAddX == null) {
+                    dataModule.aiAttackAddXBool = true;
+                }
+                if (aiAttackAddY == null) {
+                    dataModule.aiAttackAddYBool = true;
+                }
+                console.log(dataModule.aiAttackSubtractXBool, dataModule.aiAttackSubtractYBool, dataModule.aiAttackAddXBool, dataModule.aiAttackAddYBool, 2)
+                //if a bool is false that attack direction is a valid attack direction and stays that way until a miss is received by the else statement then the recentHitCoordinate pairs revert to the intialHitCoordinate pair values 
+                if (dataModule.aiAttackSubtractXBool == false) {
+                    if (gameboardModule.receiveAttack(dataModule.aiRecentHitXCoordinates - 1, dataModule.aiRecentHitYCoordinates)) {
+                        aiAttackSubtractX.click();
+                    } else {
+                        aiAttackSubtractX.click();
+                        dataModule.aiAttackSubtractXBool = true;
+                        dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                        dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+                    }
+                    return null;
+                }
+                if (dataModule.aiAttackSubtractYBool == false) {
+                    if (gameboardModule.receiveAttack(dataModule.aiRecentHitXCoordinates, dataModule.aiRecentHitYCoordinates - 1)) {
+                        aiAttackSubtractY.click();
+                    } else {
+                        aiAttackSubtractY.click();
+                        dataModule.aiAttackSubtractYBool = true;
+                        dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                        dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+                    }
+                    return null;
+                }
+                if (dataModule.aiAttackAddXBool == false) {
+                    if (gameboardModule.receiveAttack(dataModule.aiRecentHitXCoordinates + 1, dataModule.aiRecentHitYCoordinates)) {
+                        aiAttackAddX.click();
+                    } else {
+                        aiAttackAddX.click();
+                        dataModule.aiAttackAddXBool = true;
+                        dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                        dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+                    }
+                    return null;
+                }
+                if (dataModule.aiAttackAddYBool == false) {
+                    if (gameboardModule.receiveAttack(dataModule.aiRecentHitXCoordinates, dataModule.aiRecentHitYCoordinates + 1)) {
+                        aiAttackAddY.click();
+                    } else {
+                        aiAttackAddY.click();
+                        dataModule.aiAttackAddYBool = true;
+                        dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                        dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+                    }
+                    return null;
                 }
             } else {
+                //check coordinates if previously used
                 document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`).click()
             }
             return null;
@@ -591,13 +644,20 @@ const gameLoopModule = (() => {
                     }
                     let selectedXaxis = parseInt(enemyBoardDiv.dataset.xaxis);
                     let selectedYaxis = parseInt(enemyBoardDiv.dataset.yaxis);
-                    console.log(`selected x-axis ${selectedXaxis}, selected y-axis${selectedYaxis}`);
                     //this will trigger if ai hits a ship
+                    //important to note this if statement invokes the receive attack function whether its true or not so its unneccessary to call it again in the else block
                     if (gameboardModule.receiveAttack(selectedXaxis, selectedYaxis)) {
                         if (dataModule.pvp == false && dataModule.player1Turn == false) {
+                            //this if else block makes sure that aiInitial hit coordinates are only set on a ships first hit
+                            if (dataModule.aiHitBool == true) {
+
+                            } else {
+                                dataModule.aiInitialHitXCoordinates = selectedXaxis;
+                                dataModule.aiInitialHitYCoordinates = selectedYaxis;
+                            }
                             dataModule.aiHitBool = true;
-                            dataModule.aiInitialHitXCoordinates = selectedXaxis;
-                            dataModule.aiInitialHitYCoordinates = selectedYaxis;
+                            dataModule.aiRecentHitXCoordinates = selectedXaxis;
+                            dataModule.aiRecentHitYCoordinates = selectedYaxis;
                         }
                         enemyBoardDiv.style.backgroundColor = 'red';
                         //this marks the enemy board so the other player can view where they have been hit by the opposing player
@@ -605,16 +665,6 @@ const gameLoopModule = (() => {
                         alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
                         //when attack misses the else box is triggered
                     } else {
-                        //resets the boolean logic that chooses ai attack directions after a hit
-                        if (dataModule.pvp == false && dataModule.player1Turn == false) {
-                            if (dataModule.aiHitBool == true) {
-                                dataModule.aiHitBool = false;
-                                dataModule.aiAttackSubtractXBool = null;
-                                dataModule.aiAttackSubtractYBool = null;
-                                dataModule.aiAttackAddXBool = null;
-                                dataModule.aiAttackAddYBool = null;
-                            }
-                        }
                         enemyBoardDiv.style.backgroundColor = 'grey';
                         //this query selector marks misses on the other players board to view where they have been missed by the opposing player
                         document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'grey';
@@ -698,7 +748,20 @@ const gameboardModule = (() => {
                         gameboardModule.winCheck()
                     } else {
                         dataModule.player1Gameboard[i].shipObj.hits++;
-                        shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
+
+                        //checks if sunk during player 2 turn in pvp, also resets the aihitbool after a ship is sunk so the ai doesnt attempt to run its attack algorithm anymore
+                        if (shipModule.isSunk(dataModule.player2Gameboard[i].shipObj) === true) {
+                            //resets the ai hit bool and hit coordinates so it doesnt attempt to "find" the rest of the ship coordinates that have been sunk
+                            dataModule.aiHitBool = null;
+                            dataModule.aiInitialHitXCoordinates = null;
+                            dataModule.aiInitialHitYCoordinates = null;
+                            dataModule.aiRecentHitXCoordinates = null;
+                            dataModule.aiRecentHitYCoordinates = null;
+                            dataModule.aiAttackSubtractXBool = false;
+                            dataModule.aiAttackSubtractYBool = false;
+                            dataModule.aiAttackAddXBool = false;
+                            dataModule.aiAttackAddYBool = false;
+                        }
                         gameboardModule.winCheck()
                     }
                     return true;
@@ -801,11 +864,7 @@ const shipModule = (() => {
 
         if (shipObj.length == shipObj.hits) {
             shipObj.sunk = true
-            //resets the ai hit bool and hit coordinates so it doesnt attempt to "find" the rest of the ship coordinates that have been sunk
-            dataModule.aiHitBool = null;
-            dataModule.aiInitialHitXCoordinates = null;
-            dataModule.aiInitialHitYCoordinates = null;
-            return alert('ship is sunk!');
+            return true, alert('ship is sunk!');
         }
     }
 
