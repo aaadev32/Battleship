@@ -637,18 +637,21 @@ const gameLoopModule = (() => {
                         alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
                     } else {
                         //controls the direction of attacks in playerTurnHandler ai logic 
-                        if (dataModule.aiAttackSubtractXBool == false) {
-                            dataModule.aiAttackSubtractXBool = true;
-                        } else if (dataModule.aiAttackSubtractYBool == false) {
-                            dataModule.aiAttackSubtractYBool = true;
-                        } else if (dataModule.aiAttackAddXBool == false) {
-                            dataModule.aiAttackAddXBool = true;
-                        } else if (dataModule.aiAttackAddYBool == false) {
-                            dataModule.aiAttackAddYBool = true;
+                        if (dataModule.aiHitBool == true) {
+                            console.log('test miss')
+                            if (dataModule.aiAttackSubtractXBool == false) {
+                                dataModule.aiAttackSubtractXBool = true;
+                            } else if (dataModule.aiAttackSubtractYBool == false) {
+                                dataModule.aiAttackSubtractYBool = true;
+                            } else if (dataModule.aiAttackAddXBool == false) {
+                                dataModule.aiAttackAddXBool = true;
+                            } else if (dataModule.aiAttackAddYBool == false) {
+                                dataModule.aiAttackAddYBool = true;
+                            }
+                            //resets the recentHitCoordinates back to initialHitCoordinates to allow the logic in playerTurnHandler that searches for unused attacks to continually attack another direction
+                            dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                            dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
                         }
-                        //resets the recentHitCoordinates back to initialHitCoordinates to allow the logic in playerTurnHandler that searches for unused attacks to continually attack another direction
-                        dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
-                        dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
                         enemyBoardDiv.style.backgroundColor = 'grey';
                         //this query selector marks misses on the other players board to view where they have been missed by the opposing player
                         document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'grey';
@@ -713,7 +716,6 @@ const gameboardModule = (() => {
                 if (xCoordinatesTrue && yCoordinatesTrue == true) {
                     dataModule.hitBool = true;
                     //records all coordinates hit or miss for PvE mode
-                    //records hit coordinates for PvE
                     if (dataModule.player1Turn == false && dataModule.pvp == false) {
                         dataModule.hitCoordinates.xAxis.push(xCoordinates);
                         dataModule.hitCoordinates.yAxis.push(yCoordinates);
@@ -721,17 +723,9 @@ const gameboardModule = (() => {
                         dataModule.usedCoordinates.yAxis.push(yCoordinates);
                         console.log(`hit Coordinates`, dataModule.hitCoordinates);
                         console.log(`used coordinates`, dataModule.usedCoordinates)
-                    }
-                    if (dataModule.player1Turn == true) {
-                        dataModule.player2Gameboard[i].shipObj.hits++;
-                        //check if sunk or won game
-                        shipModule.isSunk(dataModule.player2Gameboard[i].shipObj)
-                        gameboardModule.winCheck()
-                    } else {
-                        dataModule.player1Gameboard[i].shipObj.hits++;
-                        shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
+                        console.log(shipModule.isSunk(dataModule.currentEnemyGameboard[i].shipObj))
                         //checks if sunk during player 2 turn in pvp, also resets the aihitbool after a ship is sunk so the ai doesnt attempt to run its attack algorithm anymore
-                        if (shipModule.isSunk(dataModule.currentEnemyGameboard[i].shipObj) === true) {
+                        if (shipModule.isSunk(dataModule.currentEnemyGameboard[i].shipObj)) {
                             //resets the ai hit bool and hit coordinates so it doesnt attempt to "find" the rest of the ship coordinates that have been sunk
                             console.log('ai bools reset')
                             dataModule.aiHitBool = null;
@@ -744,6 +738,16 @@ const gameboardModule = (() => {
                             dataModule.aiAttackAddXBool = false;
                             dataModule.aiAttackAddYBool = false;
                         }
+                    }
+                    if (dataModule.player1Turn == true) {
+                        dataModule.player2Gameboard[i].shipObj.hits++;
+                        //check if sunk or won game
+                        shipModule.isSunk(dataModule.player2Gameboard[i].shipObj)
+                        gameboardModule.winCheck()
+                    } else {
+                        dataModule.player1Gameboard[i].shipObj.hits++;
+                        shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
+
                         gameboardModule.winCheck()
                     }
                     console.log(dataModule.player1Gameboard[i].shipObj.hits, dataModule.player2Gameboard[i].shipObj.hits)
