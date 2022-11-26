@@ -648,7 +648,7 @@ const gameLoopModule = (() => {
                     //important to note this if statement invokes the receive attack function whether its true or not so its unneccessary to call it again in the else block
                     if (gameboardModule.receiveAttack(selectedXaxis, selectedYaxis)) {
                         if (dataModule.pvp == false && dataModule.player1Turn == false) {
-                            //this if else block makes sure that aiInitial hit coordinates are only set on a ships first hit
+                            //this if block makes sure that aiInitial hit coordinates are only set on a ships first hit
                             if (dataModule.aiHitBool == true) {
 
                             } else {
@@ -665,6 +665,12 @@ const gameLoopModule = (() => {
                         alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
                         //when attack misses the else box is triggered
                     } else {
+                        //this if block makes sure that recent hit coordinates are changed to initial hit coordinate values when an attack misses
+                        if (dataModule.pvp == false && dataModule.player1Turn == false) {
+                            dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates
+                            dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates
+                        }
+
                         enemyBoardDiv.style.backgroundColor = 'grey';
                         //this query selector marks misses on the other players board to view where they have been missed by the opposing player
                         document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'grey';
@@ -748,20 +754,6 @@ const gameboardModule = (() => {
                         gameboardModule.winCheck()
                     } else {
                         dataModule.player1Gameboard[i].shipObj.hits++;
-
-                        //checks if sunk during player 2 turn in pvp, also resets the aihitbool after a ship is sunk so the ai doesnt attempt to run its attack algorithm anymore
-                        if (shipModule.isSunk(dataModule.player2Gameboard[i].shipObj) === true) {
-                            //resets the ai hit bool and hit coordinates so it doesnt attempt to "find" the rest of the ship coordinates that have been sunk
-                            dataModule.aiHitBool = null;
-                            dataModule.aiInitialHitXCoordinates = null;
-                            dataModule.aiInitialHitYCoordinates = null;
-                            dataModule.aiRecentHitXCoordinates = null;
-                            dataModule.aiRecentHitYCoordinates = null;
-                            dataModule.aiAttackSubtractXBool = false;
-                            dataModule.aiAttackSubtractYBool = false;
-                            dataModule.aiAttackAddXBool = false;
-                            dataModule.aiAttackAddYBool = false;
-                        }
                         gameboardModule.winCheck()
                     }
                     return true;
@@ -862,7 +854,22 @@ const shipModule = (() => {
 
     function isSunk(shipObj) {
 
+
+
         if (shipObj.length == shipObj.hits) {
+            //checks if sunk during player 2 turn in pvp, also resets the aihitbool after a ship is sunk so the ai doesnt attempt to run its attack algorithm anymore
+            if (dataModule.player1Turn != true && dataModule.pvp == false) {
+                //resets the ai hit bool and hit coordinates so it doesnt attempt to "find" the rest of the ship coordinates that have been sunk
+                dataModule.aiHitBool = null;
+                dataModule.aiInitialHitXCoordinates = null;
+                dataModule.aiInitialHitYCoordinates = null;
+                dataModule.aiRecentHitXCoordinates = null;
+                dataModule.aiRecentHitYCoordinates = null;
+                dataModule.aiAttackSubtractXBool = false;
+                dataModule.aiAttackSubtractYBool = false;
+                dataModule.aiAttackAddXBool = false;
+                dataModule.aiAttackAddYBool = false;
+            }
             shipObj.sunk = true
             return true, alert('ship is sunk!');
         }
