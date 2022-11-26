@@ -878,8 +878,7 @@ const shipModule = (() => {
     return { shipConstructor, hit, isSunk };
 })();
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+//tesadasdf
 //below 2 lines is for the sake of testing only
 let testShip = shipModule.shipConstructor.battleship
 dataModule.selectedShip = { testShip };
