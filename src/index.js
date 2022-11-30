@@ -39,6 +39,8 @@ const dataModule = (() => {
     //next 2 lines keep track of consecutive hits for the ai
     let aiRecentHitXCoordinates = null;
     let aiRecentHitYCoordinates = null;
+    //the next line tell the ai attack algo whether or not the hit ship is vertical or horizontal
+    let aiEnemyShipHorizontal = true;
     //the next 4  bools for the 4 different attack directions set for the ai, when a move is used its associated bool is set to true, this continues until the hit ship is sunk then the bools are all set back to false
     let aiAttackSubtractXBool = false;
     let aiAttackSubtractYBool = false;
@@ -54,7 +56,7 @@ const dataModule = (() => {
     }
 
     return {
-        player1Gameboard, player2Gameboard, hitCoordinates, missedCoordinates, usedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, aiHitBool, aiSunkEnemyShip, switchAiAttack, aiInitialHitXCoordinates, aiInitialHitYCoordinates, aiRecentHitXCoordinates, aiRecentHitYCoordinates, aiAttackSubtractXBool, aiAttackSubtractYBool, aiAttackAddXBool, aiAttackAddYBool, shipPlacementTracker,
+        player1Gameboard, player2Gameboard, hitCoordinates, missedCoordinates, usedCoordinates, player1Turn, pvp, shipSelection, selectedShip, currentPlayerGameboard, currentEnemyGameboard, placementPhase, verticalShipRotation, hitBool, opponentBoardNumber, aiHitBool, aiSunkEnemyShip, switchAiAttack, aiInitialHitXCoordinates, aiInitialHitYCoordinates, aiRecentHitXCoordinates, aiRecentHitYCoordinates, aiEnemyShipHorizontal, aiAttackSubtractXBool, aiAttackSubtractYBool, aiAttackAddXBool, aiAttackAddYBool, shipPlacementTracker,
     };
 })();
 const domModule = (() => {
@@ -112,8 +114,8 @@ const playerAndPCModule = (() => {
             if (dataModule.aiHitBool == true) {
                 //each time a hit is made these bools should be returned to false to let the directional attack logic reassess the possible attack directions since it is based off of recentHitCoordinates variable
                 dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
+
                 console.log(dataModule.aiInitialHitXCoordinates, dataModule.aiInitialHitYCoordinates, 'hit coords x/y')
-                console.log(dataModule.aiAttackSubtractXBool, dataModule.aiAttackSubtractYBool, dataModule.aiAttackAddXBool, dataModule.aiAttackAddYBool, 1)
                 checkAiAttacks();
                 //in the case that all possible attacks have been tryed, reset the recentHits back to initialHits and retry checkAiAttacks
                 if (dataModule.aiAttackAddXBool == true && dataModule.aiAttackAddYBool == true && dataModule.aiAttackSubtractXBool == true && dataModule.aiAttackSubtractYBool == true) {
@@ -123,9 +125,11 @@ const playerAndPCModule = (() => {
                     checkAiAttacks();
                 }
                 aiAttack();
-                /* //below 2 lines are null error precaution. certain edgecases such as two adjacent ships cause a null error after all ai attack choices have been used but there is no falsy conditional statements with attack moves left
-                 dataModule.aiHitBool = null, dataModule.switchAiAttack = false, dataModule.aiInitialHitXCoordinates = null, dataModule.aiInitialHitYCoordinates = null, dataModule.aiRecentHitXCoordinates = null, dataModule.aiRecentHitYCoordinates = null, dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
-                 document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`).click() */
+                //below if statement is null error precaution
+                /* if (dataModule.aiAttackSubtractXBool == true, dataModule.aiAttackSubtractYBool == true, dataModule.aiAttackAddXBool == true, dataModule.aiAttackAddYBool == true) {
+                     console.log('null attack prevention! fix logic.')
+                     document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`).click()
+                 } */
             } else {
                 document.querySelector(`[data-xaxis="${randomXCoordinate}"][data-yaxis="${randomYCoordinate}"][class="opponent-gameboard-1-cell"]`).click()
             }
@@ -261,30 +265,47 @@ const playerAndPCModule = (() => {
         let aiAttackAddX = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates + 1}"][data-yaxis="${dataModule.aiRecentHitYCoordinates}"][class="opponent-gameboard-1-cell"]`);
         let aiAttackAddY = document.querySelector(`[data-xaxis="${dataModule.aiRecentHitXCoordinates}"][data-yaxis="${dataModule.aiRecentHitYCoordinates + 1}"][class="opponent-gameboard-1-cell"]`);
         //switches ai attack move after a missed attack
+        console.log(dataModule.aiAttackSubtractXBool, dataModule.aiAttackSubtractYBool, dataModule.aiAttackAddXBool, dataModule.aiAttackAddYBool, 1)
+
         if (aiAttackSubtractX == false && dataModule.switchAiAttack == true) {
-            dataModule.switchAiAttack = false
+            dataModule.switchAiAttack = false;
             dataModule.aiAttackSubtractXBool = true;
             dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates;
             dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
-        } else if (aiAttackSubtractY == false && dataModule.switchAiAttack == true) {
-            dataModule.switchAiAttack = false
-            dataModule.aiAttackSubtractYBool = true;
-            dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates;
-            dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+            dataModule.aiEnemyShipHorizontal == true
         } else if (aiAttackAddX == false && dataModule.switchAiAttack == true) {
-            dataModule.switchAiAttack = false
+            dataModule.switchAiAttack = false;
             dataModule.aiAttackAddXBool = true;
             dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates;
             dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+            dataModule.aiEnemyShipHorizontal == true
         } else if (aiAttackAddY == false && dataModule.switchAiAttack == true) {
-            dataModule.switchAiAttack = false
+            dataModule.switchAiAttack = false;
             dataModule.aiAttackAddYBool = true;
             dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates;
             dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+            dataModule.aiEnemyShipHorizontal == false;
+        } else if (aiAttackSubtractY == false && dataModule.switchAiAttack == true) {
+            dataModule.switchAiAttack = false;
+            dataModule.aiAttackSubtractYBool = true;
+            dataModule.aiRecentHitXCoordinates = dataModule.aiInitialHitXCoordinates;
+            dataModule.aiRecentHitYCoordinates = dataModule.aiInitialHitYCoordinates;
+            dataModule.aiEnemyShipHorizontal == false;
         }
+        /*     //disables horizontal attacks until ship sunk (set to true at the start of the algorithm)
+          if (dataModule.aiEnemyShipHorizontal == true) {
+              dataModule.aiEnemyShipHorizontal = false;
+              dataModule.aiAttackAddYBool = true;
+              dataModule.aiAttackSubtractYBool = true;
+          }
+          //disables vertical attacks until ship sunk
+          if (dataModule.aiEnemyShipHorizontal == false) {
+              dataModule.aiEnemyShipHorizontal == true;
+              dataModule.aiAttackSubtractXBool = true;
+              dataModule.aiAttackAddXBool = true;
+          }*/
 
         console.log(dataModule.aiAttackSubtractXBool, dataModule.aiAttackSubtractYBool, dataModule.aiAttackAddXBool, dataModule.aiAttackAddYBool, 2)
-        //if a bool is false that attack direction is a valid attack direction and stays that way until a miss is received by the else statement then the recentHitCoordinate pairs revert to the intialHitCoordinate pair values 
         if (dataModule.aiAttackSubtractXBool == false) {
             aiAttackSubtractX.click();
             return null;
@@ -680,10 +701,10 @@ const gameLoopModule = (() => {
                         //this marks the enemy board so the other player can view where they have been hit by the opposing player
                         document.querySelector(`[data-xaxis="${selectedXaxis}"][data-yaxis="${selectedYaxis}"][class="gameboard-${dataModule.opponentBoardNumber}-cell"]`).style.backgroundColor = 'red';
                         alert(`attack ${selectedXaxis}, ${selectedYaxis} hits!`)
-                        //resets all ai attack logic to default
+                        //resets all ai attack logic to default, is assigned true in the receive attack function
                         if (dataModule.aiSunkEnemyShip == true) {
                             dataModule.aiSunkEnemyShip = false;
-                            dataModule.aiHitBool = null, dataModule.switchAiAttack = false, dataModule.aiInitialHitXCoordinates = null, dataModule.aiInitialHitYCoordinates = null, dataModule.aiRecentHitXCoordinates = null, dataModule.aiRecentHitYCoordinates = null, dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
+                            dataModule.aiHitBool = null, dataModule.switchAiAttack = false, dataModule.aiInitialHitXCoordinates = null, dataModule.aiInitialHitYCoordinates = null, dataModule.aiRecentHitXCoordinates = null, dataModule.aiRecentHitYCoordinates = null, dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false, dataModule.aiEnemyShipHorizontal = true;
                         }
                         //when attack misses the else box is triggered
                     } else {
