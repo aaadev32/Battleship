@@ -113,7 +113,7 @@ const playerAndPCModule = (() => {
             //makes the pc attacks more intelligent i.e. attacking an adjacent coordinate when hitting an opponents ship
             if (dataModule.aiHitBool == true) {
                 //each time a hit is made these bools should be returned to false to let the directional attack logic reassess the possible attack directions since it is based off of recentHitCoordinates variable
-                dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
+                //dataModule.aiAttackSubtractXBool = false, dataModule.aiAttackSubtractYBool = false, dataModule.aiAttackAddXBool = false, dataModule.aiAttackAddYBool = false;
 
                 console.log(dataModule.aiInitialHitXCoordinates, dataModule.aiInitialHitYCoordinates, 'hit coords x/y')
                 checkAiAttacks();
@@ -791,11 +791,11 @@ const gameboardModule = (() => {
                     if (dataModule.player1Turn == true) {
                         dataModule.player2Gameboard[i].shipObj.hits++;
                         shipModule.isSunk(dataModule.player2Gameboard[i].shipObj)
-                        gameboardModule.winCheck()
+                        gameboardModule.winCheck();
                     } else {
                         dataModule.player1Gameboard[i].shipObj.hits++;
                         shipModule.isSunk(dataModule.player1Gameboard[i].shipObj)
-                        gameboardModule.winCheck()
+                        gameboardModule.winCheck();
                     }
                     return true;
                 }
@@ -837,19 +837,19 @@ const gameboardModule = (() => {
         }
 
         if (player1SunkShips == dataModule.player1Gameboard.length) {
-            document.getElementById('gameboard-container-0').style.display = 'none';
-            document.getElementById('gameboard-container-1').style.display = 'none';
-            document.getElementById('gameboard-header-container').style.display = 'none';
+            document.body.style.display = 'flex';
+            document.body.style.justifyContent = 'center';
+            document.getElementById('content').style.display = 'none';
             document.getElementById('victory-screen').textContent = 'player 2 Wins!!';
             document.getElementById('victory-screen').style.display = 'flex';
+
         } else if (player2SunkShips == dataModule.player2Gameboard.length) {
-            document.getElementById('gameboard-container-0').style.display = 'none';
-            document.getElementById('gameboard-container-1').style.display = 'none';
-            document.getElementById('gameboard-header-container').style.display = 'none';
+            document.body.style.display = 'flex';
+            document.body.style.justifyContent = 'center';
+            document.getElementById('content').style.display = 'none';
             document.getElementById('victory-screen').textContent = 'player 1 Wins!!';
             document.getElementById('victory-screen').style.display = 'flex';
-        } else {
-            return null;
+
         }
     }
     return { placeShip, receiveAttack, winCheck }
